@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="apple-touch-icon.png">
 <meta name="description" content="개인용 샌드위치 매매 전략 계산표">
-<title>샌드위치 매매</title>
+<title>샌드위치 매매 · SOXL 6E30</title>
 <style>
 :root{
   color-scheme:light;
@@ -20,7 +20,7 @@
 }
 *{box-sizing:border-box}
 body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font-size:15px}
-button,input{font:inherit}
+button,input,select{font:inherit}
 button{cursor:pointer}
 .wrap{max-width:1200px;margin:auto;padding:14px 16px calc(30px + env(safe-area-inset-bottom))}
 header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 16px}
@@ -42,9 +42,9 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;ma
 .form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .field{display:flex;flex-direction:column;gap:6px;min-width:0}
 .field label{font-size:12px;color:var(--muted)}
-.field input[type=number],.field input[type=text]{width:100%;min-height:46px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);font-size:16px;font-variant-numeric:tabular-nums}
-.field input:focus,.profit-add input:focus{outline:3px solid #f6c45366;border-color:var(--bread)}
-.field input:disabled{background:#f7f2e9;color:#796d60}
+.field input[type=number],.field input[type=text],.field select{width:100%;min-height:46px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);font-size:16px;font-variant-numeric:tabular-nums}
+.field input:focus,.field select:focus,.profit-add input:focus{outline:3px solid #f6c45366;border-color:var(--bread)}
+.field input:disabled,.field select:disabled{background:#f7f2e9;color:#796d60}
 .amount-control{display:grid;grid-template-columns:auto minmax(120px,1fr);align-items:center;gap:9px}
 .check-label{display:flex;align-items:center;gap:7px;font-size:13px;white-space:nowrap}
 .check-label input{width:20px;height:20px;accent-color:var(--bread)}
@@ -70,13 +70,39 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;ma
 .calc-note{margin:10px 0 0;font-size:12px;color:var(--muted)}
 .warning{display:none;margin-top:10px;padding:11px 12px;border-radius:11px;background:var(--red-bg);color:var(--red);font-weight:800}
 .warning.show{display:block}
+.atr-panel{margin-top:12px;padding:13px 14px;border-radius:13px;background:#f2f7ff;border:1px solid #ccddf5}
+.atr-panel[hidden]{display:none}
+.atr-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.atr-title{font-weight:850;color:#174d8b}
+.atr-badge{display:inline-flex;align-items:center;min-height:28px;padding:4px 9px;border-radius:999px;background:#e4efff;color:#174d8b;font-size:12px;font-weight:800}
+.atr-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:9px}
+.atr-item{padding:9px 10px;border-radius:10px;background:#fff;border:1px solid #d8e6f7}
+.atr-item span{display:block;color:var(--muted);font-size:10px}
+.atr-item b{display:block;margin-top:3px;font-size:14px;font-variant-numeric:tabular-nums}
+.atr-note{margin:9px 0 0;color:#5d6c7f;font-size:11px;line-height:1.55}
+
+.market-panel{margin-top:14px;padding:16px}
+.market-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}
+.market-title{font-size:16px;font-weight:850}
+.market-status{font-size:11px;padding:5px 8px;border-radius:99px;background:#f1f5f9;color:#52606d;border:1px solid var(--line)}
+.market-status.good{background:var(--green-bg);color:var(--green);border-color:#bfe3d1}
+.market-status.bad{background:var(--red-bg);color:var(--red);border-color:#efc4bd}
+.market-controls{display:grid;grid-template-columns:2fr 1fr auto;gap:9px;align-items:end}
+.market-controls input{width:100%;min-height:46px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);font-size:15px}
+.market-data{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-top:11px}
+.market-item{padding:10px;border:1px solid var(--line);border-radius:11px;background:var(--paper);min-width:0}
+.market-item span{display:block;color:var(--muted);font-size:10px}
+.market-item b{display:block;margin-top:4px;font-size:14px;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+.market-note{margin:9px 0 0;color:var(--muted);font-size:11px;line-height:1.55}
+.api-key-wrap{display:flex;gap:7px}.api-key-wrap input{min-width:0}.api-key-wrap button{flex:none}
+@media(max-width:760px){.market-controls{grid-template-columns:1fr}.market-data{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .engine-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 1px 7px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
 .engine-tab{flex:1;min-width:70px;min-height:48px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--muted);font-weight:800}
 .engine-tab.active{background:#fff0d8;border-color:var(--bread);color:#744313;box-shadow:inset 0 0 0 1px var(--bread)}
 .engine-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:7px 0 11px}
 .engine-summary .calc-item{background:#fff}
 .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:13px;-webkit-overflow-scrolling:touch}
-table{width:100%;border-collapse:collapse;min-width:890px;font-size:12px;font-variant-numeric:tabular-nums}
+table{width:100%;border-collapse:collapse;min-width:980px;font-size:12px;font-variant-numeric:tabular-nums}
 th,td{padding:10px 9px;text-align:right;border-bottom:1px solid #efe7da;white-space:nowrap}
 th{position:sticky;top:0;background:#fbf4e8;color:#65594d;font-size:11px;z-index:1}
 th:first-child,td:first-child{text-align:left}
@@ -128,9 +154,10 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin:13px 0}
  .growth-data{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
  .growth-item b{font-size:12px}
  .engine-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .atr-grid{grid-template-columns:1fr}
  .table-wrap{display:block}
  .mobile-list{display:none}
- table{min-width:740px;font-size:12px}
+ table{min-width:820px;font-size:12px}
  th,td{padding:9px 7px}
  th:first-child,td:first-child{position:sticky;left:0;background:#fffdf8;z-index:1}
  th:first-child{background:#fbf4e8;z-index:2}
@@ -142,43 +169,112 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin:13px 0}
  .metric-value{font-size:18px}
  .growth-top{align-items:flex-start;flex-direction:column}
 }
+dialog{border:1px solid var(--line);border-radius:16px;max-width:440px;width:calc(100% - 24px);color:var(--ink);padding:20px}dialog::backdrop{background:#332b2377}.trade-fields{display:grid;gap:10px}.trade-fields input{min-height:44px;font-size:16px;padding:8px;width:100%}.trade-fields label{font-size:13px}.trade-buttons{display:flex;gap:8px;margin-top:16px}.row-action{padding:7px 10px;min-height:44px}.holding{background:#fff6df}.table-wrap table{min-width:780px}
+
+[hidden]{display:none!important}
+.wrap{padding-bottom:calc(108px + env(safe-area-inset-bottom))}
+.app-page{min-width:0}.app-page>.section:first-child{margin-top:0}
+.app-menu{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:960px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;padding:9px 10px calc(9px + env(safe-area-inset-bottom));background:#fffaf2;border-top:1px solid var(--line);box-shadow:0 -4px 20px #47341b0c;z-index:10}
+.app-menu button{min-height:52px;border:1px solid transparent;border-radius:12px;background:transparent;color:var(--muted);font-size:14px;font-weight:800;cursor:pointer;touch-action:manipulation}
+.app-menu button[aria-pressed="true"]{background:#fff0d8;border-color:var(--bread);color:#744313}
+.app-menu button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
   <div class="brand">
-    <svg class="logo" viewBox="0 0 64 64" role="img" aria-label="다섯 겹 샌드위치 로고">
+    <svg class="logo" viewBox="0 0 64 64" role="img" aria-label="여섯 겹 샌드위치 로고">
       <path d="M8 21C10 10 20 5 32 5s22 5 24 16H8Z" fill="#C88642"/>
-      <rect x="8" y="23" width="48" height="5" rx="2.5" fill="#2768B2"/>
-      <rect x="8" y="29" width="48" height="5" rx="2.5" fill="#F6C453"/>
-      <rect x="8" y="35" width="48" height="5" rx="2.5" fill="#168257"/>
-      <rect x="8" y="41" width="48" height="5" rx="2.5" fill="#D97745"/>
-      <rect x="8" y="47" width="48" height="5" rx="2.5" fill="#8A5AC2"/>
+      <rect x="8" y="23" width="48" height="4" rx="2" fill="#2768B2"/>
+      <rect x="8" y="28" width="48" height="4" rx="2" fill="#F6C453"/>
+      <rect x="8" y="33" width="48" height="4" rx="2" fill="#168257"/>
+      <rect x="8" y="38" width="48" height="4" rx="2" fill="#D97745"/>
+      <rect x="8" y="43" width="48" height="4" rx="2" fill="#8A5AC2"/>
+      <rect x="8" y="48" width="48" height="4" rx="2" fill="#456E6A"/>
       <path d="M8 54h48v2c0 3-3 5-6 5H14c-3 0-6-2-6-5v-2Z" fill="#C88642"/>
     </svg>
-    <div><h1>샌드위치 매매</h1><p>개인용 전략 계산표</p></div>
+    <div><h1>샌드위치 매매</h1><p id="strategySubtitle">SOXL 6엔진 × 30세트 · ATR 익절</p></div>
   </div>
   <div id="saveState" class="save-state" role="status" aria-live="polite">● 저장됨</div>
 </header>
 
+<div id="page-overview" class="app-page" hidden>
 <section class="summary" aria-label="핵심 정보">
   <div class="card metric"><span class="metric-label">현재 전략자금</span><strong id="sumCapital" class="metric-value">$80,000</strong></div>
-  <div class="card metric"><span class="metric-label">세트당 목표금액</span><strong id="sumSetAmount" class="metric-value">$320</strong></div>
+  <div class="card metric"><span class="metric-label">세트당 목표금액</span><strong id="sumSetAmount" class="metric-value">$444.44</strong></div>
   <div class="card metric"><span class="metric-label">누적 실현수익</span><strong id="sumProfit" class="metric-value profit">$0</strong></div>
   <div class="card metric"><span class="metric-label">정수주 잔여자금</span><strong id="sumReserve" class="metric-value">$0</strong></div>
 </section>
-
+<section class="panel section">
+ <div class="section-title"><h2 id="strategyTitle">SOXL 샌드위치 · 전략 요약</h2></div>
+ <div class="calc-grid">
+ <div class="calc-item"><span>현재가 기준 구간</span><b id="currentEngine">—</b></div>
+ <div class="calc-item"><span>현재가 아래 첫 매수선</span><b id="nextBuy">—</b></div>
+ <div class="calc-item"><span>기준고점</span><b id="overviewHigh">—</b></div>
+ <div class="calc-item"><span>최종 매수구간 가격</span><b id="defensePrice">—</b></div>
+ </div><p class="calc-note">설정값으로 전체 매수표를 계산합니다. 현재가가 매수선에 도달해도 체결로 처리하지 않습니다. 기준고점은 직접 변경하세요.</p>
+</section>
+<section class="panel market-panel">
+  <div class="market-head">
+    <div><div class="market-title">SOXL 자동 시세 · ATR</div><div style="font-size:11px;color:var(--muted);margin-top:3px">시세는 장중 1분 조회 · 데이터 지연 여부는 API 이용권한에 따름</div></div>
+    <span id="marketStatus" class="market-status">API 미연결</span>
+  </div>
+  <div class="market-controls">
+    <div class="field"><label for="marketApiKey">Twelve Data API Key</label><div class="api-key-wrap"><input id="marketApiKey" type="password" autocomplete="off" placeholder="API 키 입력 · 이용권한 확인"><button id="toggleApiKeyBtn" class="btn" type="button">보기</button></div></div>
+    <label class="check-label" style="min-height:46px"><input id="marketAutoRefresh" type="checkbox"> 장중 1분 자동 갱신</label>
+    <button id="refreshMarketBtn" class="btn primary" type="button">지금 새로고침</button>
+  </div>
+  <div class="market-data">
+    <div class="market-item"><span>SOXL 현재가</span><b id="livePriceDisplay">—</b></div>
+    <div class="market-item"><span>전일 종가</span><b id="autoPrevCloseDisplay">—</b></div>
+    <div class="market-item"><span>ATR(14)</span><b id="autoAtrDisplay">—</b></div>
+    <div class="market-item"><span>ATR%</span><b id="autoAtrPctDisplay">—</b></div>
+    <div class="market-item"><span>오늘 계산 익절률</span><b id="autoTpDisplay">—</b></div>
+    <div class="market-item"><span>마지막 갱신</span><b id="marketUpdatedDisplay">—</b></div>
+  </div>
+  <p class="market-note">API 키는 이 기기의 브라우저에만 저장되고 JSON 백업에는 포함하지 않습니다. ATR은 지정한 공식대로 <b>완료된 최근 14개 거래일의 True Range 단순평균 (전일 종가 확보를 위해 최소 15개 일봉)</b>으로 계산하며, 장중에는 익절률을 바꾸지 않습니다.</p>
+</section>
+</div>
+<div id="page-table" class="app-page">
+<section id="buyTable" class="panel section" aria-label="엔진별 매수표">
+  <div class="section-title"><h2>엔진별 매수표</h2><span style="font-size:11px;color:var(--muted)">엔진을 눌러 매수표 확인</span></div>
+  <nav id="engineTabs" class="engine-tabs" aria-label="엔진 선택"></nav>
+  <div class="engine-summary">
+    <div class="calc-item"><span>가격 범위</span><b id="engineRange">—</b></div>
+    <div class="calc-item"><span>세트 수</span><b id="engineSetCount">—</b></div>
+    <div class="calc-item"><span>세트당 목표금액</span><b id="engineSetAmount">—</b></div>
+    <div class="calc-item"><span>실제 정수주 배정액</span><b id="engineActualAllocation">—</b></div>
+  </div>
+  <p class="calc-note">좌우로 밀어서 전체 열을 확인하세요. ATR 입력 전에도 매수가·수량·매수금액은 계산됩니다. 익절가는 전일 ATR 입력 후 표시됩니다.</p>
+  <div class="table-wrap" role="region" aria-label="매수 가격과 수량 표" tabindex="0">
+    <table aria-label="세트별 매수 및 익절 가격">
+      <thead><tr>
+        <th>세트번호</th><th>매수가</th><th>수량</th><th>실제 매수금액</th><th>목표 매도가</th><th>예상이익</th><th>현재가 대비</th><th>직전대비 하락률</th>
+      </tr></thead>
+      <tbody id="engineRows"></tbody>
+    </table>
+  </div>
+  <div id="mobileRows" class="mobile-list"></div>
+</section>
+</div>
+<div id="page-settings" class="app-page" hidden>
 <section class="panel section">
   <div class="section-title"><h2>전략 설정</h2><span style="font-size:11px;color:var(--muted)">입력 즉시 자동 계산 · 자동 저장</span></div>
   <div class="form-grid">
     <div class="field"><label for="currentCapital">현재 전략자금 ($)</label><input id="currentCapital" type="number" inputmode="decimal" min="1" step="100" value="80000"></div>
     <div class="field"><label for="refHigh">E1 기준고점 ($)</label><input id="refHigh" type="number" inputmode="decimal" min="0.0001" step="0.0001" value="278"></div>
-    <div class="field"><label for="setsPerEngine">엔진당 세트 수</label><input id="setsPerEngine" type="number" inputmode="numeric" min="1" max="500" step="1" value="50"></div>
-    <div class="field"><label for="takeProfitPct">익절률 (%)</label><input id="takeProfitPct" type="number" inputmode="decimal" min="0" step="0.1" value="6"></div>
+    <div class="field"><label for="engineCount">엔진 수 (1~20개)</label><input id="engineCount" type="number" inputmode="numeric" min="1" max="20" step="1" value="6"></div>
+    <div class="field"><label for="setsPerEngine">엔진당 세트 수</label><input id="setsPerEngine" type="number" inputmode="numeric" min="1" max="500" step="1" value="30"></div>
+    <div class="field"><label for="takeProfitMode">익절 방식</label><select id="takeProfitMode"><option value="atr">ATR 가변 익절 (기본)</option><option value="fixed">고정 익절 (직접 설정)</option></select></div>
+    <div class="field"><label for="takeProfitPct">고정 익절률 (%)</label><input id="takeProfitPct" type="number" inputmode="decimal" min="0" step="0.1" value="6"></div>
+    <div class="field"><label for="atrDataDate">ATR 기준 일봉 날짜 (미국)</label><input id="atrDataDate" type="date"></div>
+    <div class="field"><label for="manualLivePrice">현재가 직접 입력 ($)</label><input id="manualLivePrice" type="number" inputmode="decimal" min="0" step="0.0001"></div>
+    <div class="field atr-input"><label for="atr14">전일 ATR(14) ($)</label><input id="atr14" type="number" inputmode="decimal" min="0" step="0.0001" value="0" placeholder="예: 2.14"></div>
+    <div class="field atr-input"><label for="atrPrevClose">전일 종가 ($)</label><input id="atrPrevClose" type="number" inputmode="decimal" min="0" step="0.0001" value="0" placeholder="예: 38.50"></div>
     <div class="field wide"><label>세트당 목표금액</label><div class="amount-control">
       <label class="check-label"><input id="autoSetAmount" type="checkbox" checked> 자동 계산</label>
-      <input id="manualSetAmount" type="number" inputmode="decimal" min="0" step="0.01" value="320" aria-label="직접 입력 세트당 목표금액">
+      <input id="manualSetAmount" type="number" inputmode="decimal" min="0" step="0.01" value="444.444444" aria-label="직접 입력 세트당 목표금액">
     </div></div>
     <div class="field wide"><label for="totalRealizedProfit">누적 실현수익 직접 수정 ($)</label><input id="totalRealizedProfit" type="number" inputmode="decimal" step="0.01" value="0"></div>
     <div class="field wide"><label for="profitToAdd">이번 실현수익 추가 ($)</label><div class="profit-add">
@@ -186,6 +282,16 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin:13px 0}
       <button id="addProfitBtn" class="btn green" type="button">수익 추가</button>
     </div></div>
   </div>
+  <div id="atrPanel" class="atr-panel" hidden>
+    <div class="atr-head"><div class="atr-title">ATR(14) 가변 익절</div><span id="atrStatusBadge" class="atr-badge">값 입력 필요</span></div>
+    <div class="atr-grid">
+      <div class="atr-item"><span>ATR%</span><b id="atrPercentDisplay">—</b></div>
+      <div class="atr-item"><span>적용 익절률</span><b id="atrTakeProfitDisplay">—</b></div>
+      <div class="atr-item"><span>공식</span><b>ATR% × 1.25</b></div>
+    </div>
+    <p class="atr-note">최소 +5%, 최대 +10%로 제한합니다. 표의 목표 매도가는 현재 입력된 ATR 기준 참고값입니다. 실제 매수 당시 확정한 익절가는 증권사에서 별도로 유지하세요.</p>
+  </div>
+  <div id="atrWarning" class="warning" role="alert"></div>
   <div class="growth">
     <div class="growth-top">
       <div id="growthStatus" class="growth-status">증액 진행 중</div>
@@ -199,42 +305,21 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin:13px 0}
     <div class="progress" aria-label="증액 진행률"><span id="growthProgressBar"></span></div>
   </div>
 </section>
-
 <section class="panel section">
   <div class="section-title"><h2>전체 배정 요약</h2><span id="allocationModeLabel" style="font-size:11px;color:var(--muted)">세트금액 자동</span></div>
   <div class="calc-grid">
-    <div class="calc-item"><span>총 세트 수</span><b id="totalSetCount">250</b></div>
+    <div class="calc-item"><span>총 세트 수</span><b id="totalSetCount">180</b></div>
     <div class="calc-item"><span>목표 총 배정액</span><b id="totalGoalAllocation">$80,000</b></div>
     <div class="calc-item"><span>실제 정수주 총 배정액</span><b id="totalActualAllocation">$0</b></div>
     <div class="calc-item"><span>전략자금 대비 차액</span><b id="capitalDifference">$0</b></div>
   </div>
-  <p class="calc-note">정수주 잔여자금은 전체 전략표의 계산상 잔액이며, 증권계좌 예수금과는 다릅니다.</p>
+  <p class="calc-note">정수주 잔여자금은 전체 매수표를 정수주로 배정했을 때 남는 계산상 자금이며, 실제 증권계좌 예수금이 아닙니다.</p>
   <div id="budgetWarning" class="warning" role="alert"></div>
 </section>
-
-<section class="panel section">
-  <div class="section-title"><h2>엔진별 매매표</h2><span style="font-size:11px;color:var(--muted)">한 번에 한 엔진 표시</span></div>
-  <nav id="engineTabs" class="engine-tabs" aria-label="엔진 선택"></nav>
-  <div class="engine-summary">
-    <div class="calc-item"><span>가격 범위</span><b id="engineRange">—</b></div>
-    <div class="calc-item"><span>세트 수</span><b id="engineSetCount">—</b></div>
-    <div class="calc-item"><span>세트당 목표금액</span><b id="engineSetAmount">—</b></div>
-    <div class="calc-item"><span>실제 정수주 배정액</span><b id="engineActualAllocation">—</b></div>
-  </div>
-  <div class="table-wrap">
-    <table>
-      <thead><tr>
-        <th>세트번호</th><th>매수가</th><th>정수주 매수수량</th><th>실제 매수금액</th>
-        <th>목표 매도가</th><th>예상이익</th><th>직전대비 하락률</th>
-      </tr></thead>
-      <tbody id="engineRows"></tbody>
-    </table>
-  </div>
-  <div id="mobileRows" class="mobile-list"></div>
-</section>
-
-<details class="advanced">
-  <summary>고급 설정 · JSON 백업 / 복원 / 초기화</summary>
+</div>
+<div id="page-data" class="app-page" hidden><div class="section-title"><h2>데이터 관리</h2></div>
+<details class="advanced" open>
+  <summary>JSON 백업 / 복원 / 초기화</summary>
   <div class="advanced-body">
     <div class="advanced-actions">
       <button id="backupBtn" class="btn" type="button">JSON 백업</button>
@@ -246,29 +331,43 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin:13px 0}
     <p class="advanced-note">데이터는 이 브라우저의 localStorage에 저장됩니다. 기기 간 동기화는 아직 연결되지 않았습니다. JSON 백업 파일을 안전한 곳에 보관하세요.</p>
   </div>
 </details>
+</div>
 <footer>실제 주문은 증권사 앱에서 직접 진행하세요. 이 페이지는 계산표이며 자동매매를 하지 않습니다.</footer>
 </div>
+<nav class="app-menu" aria-label="앱 메뉴"><button id="menu-overview" type="button" aria-controls="page-overview" aria-pressed="false">현황</button><button id="menu-table" type="button" aria-controls="page-table" aria-pressed="true">매수표</button><button id="menu-settings" type="button" aria-controls="page-settings" aria-pressed="false">전략 설정</button><button id="menu-data" type="button" aria-controls="page-data" aria-pressed="false">데이터</button></nav>
 
 <script>
 (function(){
 "use strict";
 var STORAGE_KEY="sandwich-strategy-state-v1";
 var LEGACY_KEY="sandwich-v6-state";
-var ENGINE_COUNT=5;
+var MARKET_API_KEY="sandwich-twelve-data-key-v1";
 var DEFAULT_STATE={
-  version:1,
+  version:6,
+  activePage:"table",
+  engineCount:6,
   currentCapital:80000,
   refHigh:278,
-  setsPerEngine:50,
+  setsPerEngine:30,
+  takeProfitMode:"atr",
   takeProfitPct:6,
+  atr14:0,
+  atrPrevClose:0,
+  atrDataDate:"",
+  livePrice:0,
+  marketLastUpdated:"",
+  marketAutoRefresh:false,
   autoSetAmount:true,
-  manualSetAmount:320,
+  manualSetAmount:80000/180,
   totalRealizedProfit:0,
   growthBaseProfit:0,
+  cashBalance:80000, positions:{}, trades:[], cycle:1, pendingHigh:278, atrFetchDay:"",
   selectedEngine:0
 };
 var state;
 var saveTimer=null;
+var marketTimer=null;
+var marketBusy=false;
 var money=new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:0,maximumFractionDigits:2});
 var priceFmt=new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2,maximumFractionDigits:4});
 var qtyFmt=new Intl.NumberFormat("en-US",{maximumFractionDigits:0});
@@ -276,16 +375,31 @@ function el(id){return document.getElementById(id)}
 function finitePositive(value,fallback){var n=Number(value);return Number.isFinite(n)&&n>0?n:fallback}
 function normalizeState(value){
   var s=Object.assign({},DEFAULT_STATE,value||{});
+  if(!value||Number(value.version)<4){s.setsPerEngine=30;s.takeProfitMode="atr";s.positions={};s.trades=[];s.cashBalance=s.currentCapital;s.pendingHigh=s.refHigh;}
+  s.activePage=["overview","table","settings","data"].includes(s.activePage)?s.activePage:"table";
+  s.engineCount=Math.max(1,Math.min(20,Math.floor(finitePositive(s.engineCount,6))));
+  s.positions=s.positions&&typeof s.positions==="object"&&!Array.isArray(s.positions)?s.positions:{};
+  s.trades=Array.isArray(s.trades)?s.trades:[];
+  s.cashBalance=Number.isFinite(Number(s.cashBalance))?Number(s.cashBalance):Number(s.currentCapital);
+  s.pendingHigh=Math.max(Number(s.refHigh)||278,Number(s.pendingHigh)||0);
+  s.cycle=Math.max(1,Math.floor(Number(s.cycle)||1));
   s.currentCapital=finitePositive(s.currentCapital,DEFAULT_STATE.currentCapital);
   s.refHigh=finitePositive(s.refHigh,DEFAULT_STATE.refHigh);
   s.setsPerEngine=Math.max(1,Math.min(500,Math.floor(finitePositive(s.setsPerEngine,DEFAULT_STATE.setsPerEngine))));
+  s.takeProfitMode=s.takeProfitMode==="fixed"?"fixed":"atr";
   s.takeProfitPct=Math.max(0,Number.isFinite(Number(s.takeProfitPct))?Number(s.takeProfitPct):DEFAULT_STATE.takeProfitPct);
+  s.atr14=Math.max(0,Number.isFinite(Number(s.atr14))?Number(s.atr14):0);
+  s.atrPrevClose=Math.max(0,Number.isFinite(Number(s.atrPrevClose))?Number(s.atrPrevClose):0);
+  s.atrDataDate=typeof s.atrDataDate==="string"?s.atrDataDate:"";
+  s.livePrice=Math.max(0,Number.isFinite(Number(s.livePrice))?Number(s.livePrice):0);
+  s.marketLastUpdated=typeof s.marketLastUpdated==="string"?s.marketLastUpdated:"";
+  s.marketAutoRefresh=Boolean(s.marketAutoRefresh);
   s.autoSetAmount=Boolean(s.autoSetAmount);
   s.manualSetAmount=Math.max(0,Number.isFinite(Number(s.manualSetAmount))?Number(s.manualSetAmount):DEFAULT_STATE.manualSetAmount);
   s.totalRealizedProfit=Number.isFinite(Number(s.totalRealizedProfit))?Number(s.totalRealizedProfit):0;
   s.growthBaseProfit=Number.isFinite(Number(s.growthBaseProfit))?Number(s.growthBaseProfit):s.totalRealizedProfit;
-  s.selectedEngine=Math.max(0,Math.min(ENGINE_COUNT-1,Math.floor(Number(s.selectedEngine)||0)));
-  s.version=1;
+  s.selectedEngine=Math.max(0,Math.min(s.engineCount-1,Math.floor(Number(s.selectedEngine)||0)));
+  s.version=6;
   return s;
 }
 function migrateLegacy(){
@@ -311,41 +425,129 @@ function loadState(){
     var saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
     if(saved&&typeof saved==="object")return normalizeState(saved);
   }catch(error){}
-  return migrateLegacy()||normalizeState(DEFAULT_STATE);
+  return migrateLegacy()||normalizeState(JSON.parse(JSON.stringify(DEFAULT_STATE)));
 }
 function saveState(){
-  window.clearTimeout(saveTimer);
-  el("saveState").textContent="● 저장 중";
-  el("saveState").classList.remove("error");
-  saveTimer=window.setTimeout(function(){
-    try{
-      localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
-      el("saveState").textContent="● 저장됨";
-      el("saveState").classList.remove("error");
-    }catch(error){
-      el("saveState").textContent="● 저장 오류";
-      el("saveState").classList.add("error");
-    }
-  },120);
+ try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));el('saveState').textContent='● 저장됨';el('saveState').classList.remove('error')}
+ catch(error){el('saveState').textContent='● 저장 오류';el('saveState').classList.add('error')}
+}
+function getMarketApiKey(){
+  try{return localStorage.getItem(MARKET_API_KEY)||""}catch(error){return ""}
+}
+function setMarketApiKey(value){
+  try{if(value)localStorage.setItem(MARKET_API_KEY,value);else localStorage.removeItem(MARKET_API_KEY)}catch(error){}
+}
+function nyParts(){
+  var parts=new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",year:"numeric",month:"2-digit",day:"2-digit",weekday:"short",hour:"2-digit",minute:"2-digit",hour12:false}).formatToParts(new Date());
+  var o={};parts.forEach(function(p){o[p.type]=p.value});return o;
+}
+function nyDateString(){var p=nyParts();return p.year+"-"+p.month+"-"+p.day}
+function likelyUSMarketOpen(){
+  var p=nyParts();if(["Sat","Sun"].indexOf(p.weekday)>=0)return false;
+  var mins=Number(p.hour)*60+Number(p.minute);return mins>=570&&mins<960;
+}
+function setMarketStatus(message,kind){
+  var node=el("marketStatus");node.textContent=message;node.className="market-status"+(kind?" "+kind:"");
+}
+async function fetchTD(endpoint,params){
+  var key=getMarketApiKey();if(!key)throw new Error("API 키가 없습니다.");
+  var qs=new URLSearchParams(Object.assign({},params,{apikey:key}));
+  var response=await fetch("https://api.twelvedata.com/"+endpoint+"?"+qs.toString(),{cache:"no-store"});
+  if(!response.ok)throw new Error("시세 서버 응답 오류 ("+response.status+")");
+  var data=await response.json();
+  if(data&&data.status==="error")throw new Error(data.message||"API 오류");
+  if(data&&data.code&&data.message)throw new Error(data.message);
+  return data;
+}
+function calculateAtrFromDaily(values){
+  var todayNY=nyDateString();
+  var bars=(values||[]).map(function(v){return{date:String(v.datetime||"").slice(0,10),high:Number(v.high),low:Number(v.low),close:Number(v.close)}})
+    .filter(function(v){return v.date&&v.date<todayNY&&Number.isFinite(v.high)&&Number.isFinite(v.low)&&Number.isFinite(v.close)})
+    .sort(function(a,b){return a.date.localeCompare(b.date)});
+  if(bars.length<15)throw new Error("ATR 계산용 완료 일봉이 부족합니다.");
+  bars=bars.slice(-15);
+  var tr=[];
+  for(var i=1;i<bars.length;i++){
+    var prev=bars[i-1].close,cur=bars[i];
+    tr.push(Math.max(cur.high-cur.low,Math.abs(cur.high-prev),Math.abs(cur.low-prev)));
+  }
+  var atr=tr.reduce(function(a,b){return a+b},0)/tr.length;
+  return{atr:atr,prevClose:bars[bars.length-1].close,date:bars[bars.length-1].date};
+}
+async function refreshAtrData(){
+  var data=await fetchTD("time_series",{symbol:"SOXL",interval:"1day",outputsize:"25",format:"JSON"});
+  var result=calculateAtrFromDaily(data.values);
+  state.atrFetchDay=nyDateString();
+  state.atr14=result.atr;state.atrPrevClose=result.prevClose;state.atrDataDate=result.date;
+  el("atr14").value=Number(result.atr.toFixed(6));el("atrPrevClose").value=Number(result.prevClose.toFixed(6));
+  return result;
+}
+async function refreshLivePrice(){
+  var data=await fetchTD("price",{symbol:"SOXL"});
+  var price=Number(data.price);if(!Number.isFinite(price)||price<=0)throw new Error("현재가를 읽지 못했습니다.");
+  observePrice(price);return price;
+}
+async function refreshMarketData(includeAtr){
+  if(marketBusy)return;marketBusy=true;setMarketStatus("갱신 중…","");el("refreshMarketBtn").disabled=true;
+  try{
+    var tasks=[refreshLivePrice()];if(state.atrFetchDay!==nyDateString()||!state.atrDataDate)tasks.push(refreshAtrData());
+    await Promise.all(tasks);
+    state.marketLastUpdated=new Date().toISOString();
+    setMarketStatus("API 시세 수신 · 지연 여부는 계약 기준","good");
+    render();saveState();scheduleMarketRefresh();
+  }catch(error){setMarketStatus(error.message||"시세 연결 실패","bad");}
+  finally{marketBusy=false;el("refreshMarketBtn").disabled=false;renderMarketPanel();}
+}
+function renderMarketPanel(){
+  var tp=getTakeProfitInfo();
+  text("livePriceDisplay",state.livePrice>0?priceFmt.format(state.livePrice):"—");
+  text("autoPrevCloseDisplay",state.atrPrevClose>0?priceFmt.format(state.atrPrevClose):"—");
+  text("autoAtrDisplay",state.atr14>0?priceFmt.format(state.atr14):"—");
+  text("autoAtrPctDisplay",tp.atrValid?tp.atrPct.toFixed(2)+"%":"—");
+  text("autoTpDisplay",tp.atrValid?"+"+tp.atrTakeProfit.toFixed(2)+"%":"—");
+  var updated="—";
+  if(state.marketLastUpdated){try{updated=new Date(state.marketLastUpdated).toLocaleString("ko-KR",{hour12:false})}catch(error){updated=state.marketLastUpdated}}
+  text("marketUpdatedDisplay",updated);
+  el("marketAutoRefresh").checked=state.marketAutoRefresh;
+}
+function scheduleMarketRefresh(){
+  if(marketTimer){window.clearInterval(marketTimer);marketTimer=null}
+  if(!state.marketAutoRefresh||!getMarketApiKey())return;
+  marketTimer=window.setInterval(function(){
+    if(document.hidden||!likelyUSMarketOpen())return;
+    refreshMarketData(false);
+  },60000);
+}
+function initMarketData(){
+  el("marketApiKey").value=getMarketApiKey();renderMarketPanel();scheduleMarketRefresh();
+  if(getMarketApiKey())refreshMarketData(true);
+}
+function getTakeProfitInfo(){
+  var atrValid=state.atr14>0&&state.atrPrevClose>0;
+  var atrPct=atrValid?state.atr14/state.atrPrevClose*100:null;
+  var atrTakeProfit=atrValid?Math.max(5,Math.min(10,atrPct*1.25)):null;
+  var effectivePct=state.takeProfitMode==="atr"?(atrValid?atrTakeProfit:null):state.takeProfitPct;
+  return {atrValid:atrValid,atrPct:atrPct,atrTakeProfit:atrTakeProfit,effectivePct:effectivePct};
 }
 function getDerivedState(){
-  var totalSets=ENGINE_COUNT*state.setsPerEngine;
+  var tpInfo=getTakeProfitInfo();
+  var totalSets=state.engineCount*state.setsPerEngine;
   var setAmount=state.autoSetAmount?state.currentCapital/totalSets:state.manualSetAmount;
   var totalGoalAllocation=setAmount*totalSets;
   var engines=[];
   var totalActualAllocation=0;
-  for(var engineIndex=0;engineIndex<ENGINE_COUNT;engineIndex++){
-    var start=state.refHigh/Math.pow(2,engineIndex);
+  for(var engineIndex=0;engineIndex<state.engineCount;engineIndex++){
+    var start=state.refHigh*Math.pow(0.6,engineIndex);
     var rows=[];
     var actual=0;
     for(var i=0;i<state.setsPerEngine;i++){
-      var buyPrice=start*(1-(i+1)/(2*state.setsPerEngine));
-      var previousPrice=i===0?start:start*(1-i/(2*state.setsPerEngine));
+      var buyPrice=start*(1-0.4*(i+1)/state.setsPerEngine);
+      var previousPrice=i===0?start:start*(1-0.4*i/state.setsPerEngine);
       var dropPct=(buyPrice/previousPrice-1)*100;
       var quantity=buyPrice>0?Math.floor(setAmount/buyPrice):0;
       var actualAmount=quantity*buyPrice;
-      var sellPrice=buyPrice*(1+state.takeProfitPct/100);
-      var expectedProfit=actualAmount*state.takeProfitPct/100;
+      var sellPrice=tpInfo.effectivePct===null?null:buyPrice*(1+tpInfo.effectivePct/100);
+      var expectedProfit=tpInfo.effectivePct===null?null:actualAmount*tpInfo.effectivePct/100;
       rows.push({
         number:i+1,
         buyPrice:buyPrice,
@@ -354,12 +556,13 @@ function getDerivedState(){
         quantity:quantity,
         actualAmount:actualAmount,
         sellPrice:sellPrice,
+        takeProfitPct:tpInfo.effectivePct,
         expectedProfit:expectedProfit
       });
       actual+=actualAmount;
     }
     totalActualAllocation+=actual;
-    engines.push({index:engineIndex,start:start,end:start*0.5,rows:rows,actualAllocation:actual});
+    engines.push({index:engineIndex,start:start,end:start*0.6,rows:rows,actualAllocation:actual});
   }
   var nextGrowthThreshold=state.growthBaseProfit+state.currentCapital*0.10;
   return{
@@ -374,6 +577,7 @@ function getDerivedState(){
     totalActualAllocation:totalActualAllocation,
     capitalDifference:state.currentCapital-totalGoalAllocation,
     integerShareReserve:state.currentCapital-totalActualAllocation,
+    takeProfitInfo:tpInfo,
     engines:engines
   };
 }
@@ -381,17 +585,25 @@ function text(id,value){el(id).textContent=value}
 function updateForm(){
   el("currentCapital").value=state.currentCapital;
   el("refHigh").value=state.refHigh;
+  el("engineCount").value=state.engineCount;
   el("setsPerEngine").value=state.setsPerEngine;
+  el("atrDataDate").value=state.atrDataDate||"";el("manualLivePrice").value=state.livePrice||"";
+  el("takeProfitMode").value=state.takeProfitMode;
   el("takeProfitPct").value=state.takeProfitPct;
+  el("atr14").value=state.atr14||"";
+  el("atrPrevClose").value=state.atrPrevClose||"";
   el("autoSetAmount").checked=state.autoSetAmount;
   el("manualSetAmount").value=state.autoSetAmount?Number(getDerivedState().setAmount.toFixed(6)):state.manualSetAmount;
   el("manualSetAmount").disabled=state.autoSetAmount;
+  el("takeProfitPct").disabled=state.takeProfitMode==="atr";
+  el("atr14").disabled=state.takeProfitMode!=="atr";
+  el("atrPrevClose").disabled=state.takeProfitMode!=="atr";
   el("totalRealizedProfit").value=state.totalRealizedProfit;
 }
 function renderTabs(){
   var nav=el("engineTabs");
   nav.textContent="";
-  for(var i=0;i<ENGINE_COUNT;i++){
+  for(var i=0;i<state.engineCount;i++){
     var button=document.createElement("button");
     button.type="button";
     button.className="engine-tab"+(state.selectedEngine===i?" active":"");
@@ -414,57 +626,53 @@ function addMobileValue(parent,label,value,className){
   var val=document.createElement("b");val.textContent=value;
   box.appendChild(name);box.appendChild(val);parent.appendChild(box);
 }
+function observePrice(price){state.livePrice=price}
+function renderPortfolio(){
+ const d=getDerivedState(),all=d.engines.flatMap(e=>e.rows.map(r=>({e:e.index,r})));
+ const next=state.livePrice>0?all.find(x=>x.r.buyPrice<state.livePrice):all[0];
+ text('currentEngine',state.livePrice>0?'E'+Math.min(state.engineCount,1+Math.max(0,Math.floor(Math.log(state.livePrice/state.refHigh)/Math.log(.6)))):'—');
+ text('nextBuy',next?'E'+(next.e+1)+'-'+next.r.number+' '+priceFmt.format(next.r.buyPrice):'전체 매수구간 아래');
+ text('overviewHigh',priceFmt.format(state.refHigh));
+ text('defensePrice',priceFmt.format(state.refHigh*Math.pow(.6,state.engineCount)));
+}
 function renderEngine(){
-  var data=getDerivedState();
-  var engine=data.engines[state.selectedEngine];
-  var tbody=el("engineRows");
-  var mobile=el("mobileRows");
-  tbody.textContent="";
-  mobile.textContent="";
-  text("engineRange",priceFmt.format(engine.start)+" → "+priceFmt.format(engine.end));
-  text("engineSetCount",String(state.setsPerEngine));
-  text("engineSetAmount",money.format(data.setAmount));
-  text("engineActualAllocation",money.format(engine.actualAllocation));
-  engine.rows.forEach(function(r){
-    var tr=document.createElement("tr");
-    addTableCell(tr,"E"+(state.selectedEngine+1)+"-"+String(r.number).padStart(2,"0"));
-    addTableCell(tr,priceFmt.format(r.buyPrice),"buy");
-    addTableCell(tr,r.quantity===0?"0주":qtyFmt.format(r.quantity)+"주",r.quantity===0?"unavailable":"qty");
-    addTableCell(tr,money.format(r.actualAmount),"actual");
-    addTableCell(tr,priceFmt.format(r.sellPrice),"sell");
-    addTableCell(tr,money.format(r.expectedProfit),"profit");
-    addTableCell(tr,r.previousDropPct.toFixed(2)+"%");
-    tbody.appendChild(tr);
-
-    var card=document.createElement("article");
-    card.className="set-card";
-    var head=document.createElement("div");head.className="set-head";
-    var title=document.createElement("span");title.textContent="E"+(state.selectedEngine+1)+"-"+String(r.number).padStart(2,"0");
-    var drop=document.createElement("small");drop.textContent="직전 대비 "+r.previousDropPct.toFixed(2)+"%";
-    head.appendChild(title);head.appendChild(drop);card.appendChild(head);
-    var main=document.createElement("div");main.className="set-main";
-    addMobileValue(main,"매수가",priceFmt.format(r.buyPrice),"main-buy");
-    addMobileValue(main,"정수주 수량",r.quantity===0?"0주 / 매수불가":qtyFmt.format(r.quantity)+"주","");
-    addMobileValue(main,"실제 매수금액",money.format(r.actualAmount),"");
-    addMobileValue(main,"목표 매도가",priceFmt.format(r.sellPrice),"main-sell");
-    card.appendChild(main);
-    var extra=document.createElement("div");extra.className="set-extra";
-    addMobileValue(extra,"목표 세트금액",money.format(r.targetAmount),"");
-    addMobileValue(extra,"예상이익",money.format(r.expectedProfit),"");
-    card.appendChild(extra);
-    mobile.appendChild(card);
-  });
-  document.querySelectorAll(".engine-tab").forEach(function(button){
-    button.onclick=function(){
-      state.selectedEngine=Number(button.getAttribute("data-engine"));
-      renderTabs();
-      renderEngine();
-      saveState();
-    };
+ var data=getDerivedState(),engine=data.engines[state.selectedEngine],tbody=el('engineRows');
+ tbody.textContent='';el('mobileRows').textContent='';
+ text('engineRange',priceFmt.format(engine.start)+' → '+priceFmt.format(engine.end));
+ text('engineSetCount',state.setsPerEngine);text('engineSetAmount',money.format(data.setAmount));
+ text('engineActualAllocation',money.format(engine.actualAllocation));
+ engine.rows.forEach(function(r){
+   var tr=document.createElement('tr');
+   addTableCell(tr,'E'+(state.selectedEngine+1)+'-'+String(r.number).padStart(2,'0'));
+   addTableCell(tr,priceFmt.format(r.buyPrice),'buy');
+   addTableCell(tr,r.quantity+'주',r.quantity===0?'unavailable':'qty');
+   addTableCell(tr,money.format(r.actualAmount),'actual');
+   addTableCell(tr,r.sellPrice===null?'ATR 입력 필요':priceFmt.format(r.sellPrice),'sell');
+   addTableCell(tr,r.expectedProfit===null?'—':money.format(r.expectedProfit),'profit');
+   addTableCell(tr,state.livePrice>0?((r.buyPrice/state.livePrice-1)*100).toFixed(2)+'%':'—');
+   addTableCell(tr,r.previousDropPct.toFixed(2)+'%');
+   tbody.appendChild(tr);
+ });
+ document.querySelectorAll('.engine-tab').forEach(function(button){button.onclick=function(){state.selectedEngine=Number(button.getAttribute('data-engine'));renderTabs();renderEngine();saveState()}});
+}
+function renderPage(){
+  ["overview","table","settings","data"].forEach(function(page){
+    var selected=page===state.activePage;
+    el("page-"+page).hidden=!selected;
+    el("menu-"+page).setAttribute("aria-pressed",String(selected));
   });
 }
+function switchPage(page){
+  state.activePage=page;renderPage();saveState();
+  if(typeof window.scrollTo==="function")window.scrollTo({top:0,behavior:"auto"});
+}
 function render(){
+  renderPage();
   var d=getDerivedState();
+  text("strategySubtitle","SOXL "+state.engineCount+"엔진 × "+state.setsPerEngine+"세트 · ATR 익절");
+  text("strategyTitle","SOXL 샌드위치 "+state.engineCount+"E"+state.setsPerEngine+" · 전략 요약");
+  document.title="샌드위치 매매 · SOXL "+state.engineCount+"E"+state.setsPerEngine;
+  renderMarketPanel();
   text("sumCapital",money.format(d.currentCapital));
   text("sumSetAmount",money.format(d.setAmount));
   text("sumProfit",money.format(d.totalRealizedProfit));
@@ -476,6 +684,24 @@ function render(){
   text("capitalDifference",money.format(d.capitalDifference));
   el("capitalDifference").style.color=d.capitalDifference<0?"var(--red)":"var(--ink)";
   text("allocationModeLabel",state.autoSetAmount?"세트금액 자동":"세트금액 직접 입력");
+  var tp=d.takeProfitInfo;
+  el("atrPanel").hidden=state.takeProfitMode!=="atr";
+  el("takeProfitPct").disabled=state.takeProfitMode==="atr";
+  el("atr14").disabled=state.takeProfitMode!=="atr";
+  el("atrPrevClose").disabled=state.takeProfitMode!=="atr";
+  var atrWarning=el("atrWarning");
+  if(state.takeProfitMode==="atr"){
+    if(tp.atrValid){
+      text("atrPercentDisplay",tp.atrPct.toFixed(2)+"%");
+      text("atrTakeProfitDisplay","+"+tp.atrTakeProfit.toFixed(2)+"%");
+      text("atrStatusBadge","표 계산 · +"+tp.effectivePct.toFixed(2)+"%");
+      atrWarning.textContent="";atrWarning.classList.remove("show");
+    }else{
+      text("atrPercentDisplay","—");text("atrTakeProfitDisplay","—");text("atrStatusBadge","값 입력 필요");
+      atrWarning.textContent="ATR 모드에서는 전일 ATR(14)와 전일 종가를 입력해야 합니다. 값이 없으면 목표 매도가와 예상이익은 표시되지 않습니다.";
+      atrWarning.classList.add("show");
+    }
+  }else{atrWarning.textContent="";atrWarning.classList.remove("show");}
   var warning=el("budgetWarning");
   if(d.totalGoalAllocation>d.currentCapital+0.000001){
     warning.textContent="현재 전략자금보다 "+money.format(d.totalGoalAllocation-d.currentCapital)+" 많습니다.";
@@ -496,29 +722,48 @@ function render(){
   el("applyRecommendedBtn").disabled=!ready;
   el("manualSetAmount").disabled=state.autoSetAmount;
   if(state.autoSetAmount)el("manualSetAmount").value=Number(d.setAmount.toFixed(6));
+  renderPortfolio();
   renderTabs();
   renderEngine();
 }
 function setNumberFromInput(id,key,minimum,integer,capitalEdit){
   var input=el(id);
   input.addEventListener("input",function(){
-    if(input.value==="")return;
+    if(input.disabled||input.value==="")return;
     var value=Number(input.value);
     if(!Number.isFinite(value)||value<minimum||(integer&&!Number.isInteger(value)))return;
     if(capitalEdit&&value!==state.currentCapital)state.growthBaseProfit=state.totalRealizedProfit;
     state[key]=value;
+    if(key==="refHigh")state.pendingHigh=value;
     if(key==="setsPerEngine")state[key]=Math.min(500,Math.floor(value));
+    if(key==="engineCount"){state.engineCount=Math.min(20,value);state.selectedEngine=Math.min(state.selectedEngine,state.engineCount-1);}
     render();
     saveState();
   });
   input.addEventListener("blur",function(){updateForm()});
 }
 function bindControls(){
+  ["overview","table","settings","data"].forEach(function(page){el("menu-"+page).onclick=function(){switchPage(page)}});
+  el('atrDataDate').addEventListener('change',function(){state.atrDataDate=el('atrDataDate').value;state.atrFetchDay=nyDateString();render();saveState()});
+  el('manualLivePrice').addEventListener('change',function(){const v=Number(el('manualLivePrice').value);if(v>0){observePrice(v);state.marketLastUpdated=new Date().toISOString();setMarketStatus('직접 입력 시세','');render();saveState()}});
+
   setNumberFromInput("currentCapital","currentCapital",1,false,true);
   setNumberFromInput("refHigh","refHigh",0.0001,false,false);
+  setNumberFromInput("engineCount","engineCount",1,true,false);
   setNumberFromInput("setsPerEngine","setsPerEngine",1,true,false);
   setNumberFromInput("takeProfitPct","takeProfitPct",0,false,false);
+  setNumberFromInput("atr14","atr14",0,false,false);
+  setNumberFromInput("atrPrevClose","atrPrevClose",0,false,false);
   setNumberFromInput("manualSetAmount","manualSetAmount",0,false,false);
+  el("takeProfitMode").addEventListener("change",function(){
+    state.takeProfitMode=el("takeProfitMode").value==="atr"?"atr":"fixed";
+    updateForm();render();saveState();
+  });
+  el("marketApiKey").addEventListener("change",function(){setMarketApiKey(el("marketApiKey").value.trim());scheduleMarketRefresh();});
+  el("toggleApiKeyBtn").addEventListener("click",function(){var input=el("marketApiKey");input.type=input.type==="password"?"text":"password";el("toggleApiKeyBtn").textContent=input.type==="password"?"보기":"숨기기";});
+  el("marketAutoRefresh").addEventListener("change",function(){state.marketAutoRefresh=el("marketAutoRefresh").checked;saveState();scheduleMarketRefresh();if(state.marketAutoRefresh&&getMarketApiKey())refreshMarketData(true);});
+  el("refreshMarketBtn").addEventListener("click",function(){var key=el("marketApiKey").value.trim();if(key)setMarketApiKey(key);refreshMarketData(true);});
+  document.addEventListener("visibilitychange",function(){if(!document.hidden&&state.marketAutoRefresh&&getMarketApiKey())refreshMarketData(true);});
   el("autoSetAmount").addEventListener("change",function(){
     state.autoSetAmount=el("autoSetAmount").checked;updateForm();render();saveState();
   });
@@ -545,7 +790,7 @@ function bindControls(){
     updateForm();render();saveState();
   });
   el("backupBtn").addEventListener("click",function(){
-    var backup={app:"sandwich-trading-sheet",version:1,exportedAt:new Date().toISOString(),state:state};
+    var backup={app:"sandwich-trading-sheet",version:6,exportedAt:new Date().toISOString(),state:state};
     var blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
     var url=URL.createObjectURL(blob);
     var link=document.createElement("a");
@@ -574,9 +819,9 @@ function bindControls(){
     updateForm();render();saveState();
   });
   el("resetAllBtn").addEventListener("click",function(){
-    if(!window.confirm("전체 전략 기본값으로 초기화할까요? 저장된 전략자금과 실현수익이 기본값으로 바뀝니다."))return;
+    if(!window.confirm("전체 전략 설정을 초기화할까요? 먼저 JSON 백업을 권장합니다."))return;
     localStorage.removeItem(LEGACY_KEY);
-    state=normalizeState(DEFAULT_STATE);updateForm();render();saveState();
+    state=normalizeState(JSON.parse(JSON.stringify(DEFAULT_STATE)));updateForm();render();saveState();
   });
 }
 if("serviceWorker" in navigator){
@@ -592,6 +837,7 @@ updateForm();
 bindControls();
 render();
 saveState();
+initMarketData();
 })();
 </script>
 </body>
