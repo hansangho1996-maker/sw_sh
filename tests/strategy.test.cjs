@@ -21,11 +21,12 @@ function device(){
  return {t,elems};
 }
 const results=[];
+function oldGrid(t){t.state().firstBuyAtHigh=false;return t}
 function test(name,fn){fn();results.push(name)}
 
 // 1. 기본값은 기존 공식과 완전히 같다 (회귀)
-test("default grid identical to original 0.6/0.4 formula",()=>{
- const {t}=device(),d=t.derive();
+test("option off: grid identical to original 0.6/0.4 formula",()=>{
+ const {t}=device();oldGrid(t);const d=t.derive();
  assert(d.totalSets===180,"180 sets");near(d.setAmount,80000/180,"set amount");
  for(const e of d.engines){const start=278*Math.pow(0.6,e.index);near(e.start,start,"start");near(e.end,start*0.6,"end");
    e.rows.forEach((r,i)=>{const buy=start*(1-0.4*(i+1)/30);near(r.buyPrice,buy,"buy");assert(r.quantity===Math.floor((80000/180)/buy),"qty")})}
@@ -34,14 +35,14 @@ test("default grid identical to original 0.6/0.4 formula",()=>{
 
 // 2. 엔진 하락폭 50%
 test("engine drop 50%",()=>{
- const {t}=device();t.state().engineDropPct=50;const d=t.derive();
+ const {t}=device();oldGrid(t);t.state().engineDropPct=50;const d=t.derive();
  near(d.engines[1].start,139,"E2 start");near(d.bottomPrice,278*Math.pow(0.5,6),"bottom");
  near(d.engines[0].rows[0].buyPrice,278*(1-0.5/30),"E1-01");near(d.engines[0].end,139,"E1 end");
 });
 
 // 3. 엔진별 세트 수 30,30,30,30,10,10 → 엔진마다 같은 금액, 10세트 매수선 = 30세트의 3칸마다
 test("per-engine sets override keeps equal capital per engine",()=>{
- const {t}=device();const base=t.derive();
+ const {t}=device();oldGrid(t);const base=t.derive();
  t.state().engineSetsOverride="30,30,30,30,10,10";const d=t.derive();
  assert(d.totalSets===140,"140 sets");assert(d.setsOverridden,"overridden");
  near(d.engines[0].setAmount,80000/6/30,"E1 set amount");near(d.engines[4].setAmount,80000/6/10,"E5 set amount");
@@ -62,7 +63,7 @@ test("account mapping",()=>{
 
 // 5. 연말 절세: 실현이익 2,800만 · 공제 250만 · 여유 10% · 현재가 32 · E4-30까지 보유
 test("tax-loss plan picks largest losses until target",()=>{
- const {t}=device();const s=t.state();
+ const {t}=device();oldGrid(t);const s=t.state();
  Object.assign(s,{livePrice:32,heldThrough:"E4-30",taxRealizedKrw:28000000,taxDeductionKrw:2500000,taxBufferPct:10,taxFxRate:1450});
  const p=t.plan(),d=t.derive();
  near(p.target,25500000*1.1,"target");near(p.taxBefore,25500000*0.22,"tax before");
@@ -113,7 +114,7 @@ test("normalization of invalid values",()=>{
 
 // 10. 화면: 엔진별 세트 수가 표와 입력에 반영
 test("render with override and inputs",()=>{
- const {t,elems}=device();
+ const {t,elems}=device();oldGrid(t);
  elems.engineSetsOverride.value="30,30,30,30,10,10";elems.engineSetsOverride.handlers.input();
  assert(t.state().engineSetsOverride==="30,30,30,30,10,10","override from input");
  t.state().selectedEngine=4;t.render();assert(elems.engineRows.children.length===10,"E5 rows "+elems.engineRows.children.length);
@@ -122,6 +123,23 @@ test("render with override and inputs",()=>{
  elems.engineDropPct.value="95";elems.engineDropPct.handlers.input();assert(t.state().engineDropPct===50,"out of range ignored");
  elems["menu-tax"].click();assert(elems["page-tax"].hidden===false&&elems["page-table"].hidden===true,"tax page");
  assert(elems.strategySubtitle.textContent.includes("세트 30·30·30·30·10·10"),elems.strategySubtitle.textContent);
+});
+
+// 11. 첫 매수 = 엔진 시작가 (기본값)
+test("first buy at engine start",()=>{
+ const {t,elems}=device();const d=t.derive();assert(t.state().firstBuyAtHigh===true,"default on");
+ near(d.engines[0].rows[0].buyPrice,278,"E1-01 = 278");near(d.engines[0].rows[1].buyPrice,278*(1-0.4/30),"E1-02 = old E1-01");
+ near(d.engines[0].rows[0].previousDropPct,0,"E1-01 drop 0");
+ for(const e of d.engines){const start=278*Math.pow(0.6,e.index);e.rows.forEach((r,i)=>near(r.buyPrice,start*(1-0.4*i/30),"line"))}
+ near(d.engines[1].rows[0].buyPrice,166.8,"E2-01 = engine start");
+ near(d.engines[1].rows[0].previousDropPct,(166.8/(278*(1-0.4*29/30))-1)*100,"E2-01 drop vs E1-30");
+ near(d.bottomPrice,278*Math.pow(0.6,5)*(1-0.4*29/30),"lowest line");
+ // 같은 가격 중복 없음
+ const all=d.engines.flatMap(e=>e.rows.map(r=>r.buyPrice));assert(new Set(all.map(x=>x.toFixed(6))).size===180,"no duplicate lines");
+ // 끄면 이전 공식
+ elems.firstBuyAtHigh.checked=false;elems.firstBuyAtHigh.handlers.change();near(t.derive().engines[0].rows[0].buyPrice,278*(1-0.4/30),"off");
+ // 이전 버전 저장값(항목 없음)은 기본값(켜짐)
+ assert(t.normalize({}).firstBuyAtHigh===true,"missing -> on");assert(t.normalize({firstBuyAtHigh:false}).firstBuyAtHigh===false,"kept off");
 });
 
 console.log("PASS "+results.length+" tests: "+results.join(", "));

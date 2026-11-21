@@ -268,6 +268,7 @@ dialog{border:1px solid var(--line);border-radius:16px;max-width:440px;width:cal
     <div class="field"><label for="engineCount">엔진 수 (1~20개)</label><input id="engineCount" type="number" inputmode="numeric" min="1" max="20" step="1" value="6"></div>
     <div class="field"><label for="setsPerEngine">엔진당 세트 수</label><input id="setsPerEngine" type="number" inputmode="numeric" min="1" max="500" step="1" value="30"></div>
     <div class="field"><label for="engineDropPct">엔진당 하락폭 (%)</label><input id="engineDropPct" type="number" inputmode="decimal" min="5" max="90" step="1" value="40"></div>
+    <div class="field"><label>첫 매수가</label><label class="check-label" style="min-height:44px"><input id="firstBuyAtHigh" type="checkbox" checked> 엔진 시작가(E1 기준고점)에서 첫 매수</label></div>
     <div class="field"><label for="engineSetsOverride">엔진별 세트 수 (선택)</label><input id="engineSetsOverride" type="text" inputmode="numeric" autocomplete="off" placeholder="예: 30,30,30,30,10,10"></div>
     <div class="field"><label for="setsPerAccount">계좌당 세트 수</label><input id="setsPerAccount" type="number" inputmode="numeric" min="1" max="500" step="1" value="3"></div>
     <div class="field"><label for="takeProfitMode">익절 방식</label><select id="takeProfitMode"><option value="atr">ATR 가변 익절 (기본)</option><option value="fixed">고정 익절 (직접 설정)</option></select></div>
@@ -296,7 +297,7 @@ dialog{border:1px solid var(--line);border-radius:16px;max-width:440px;width:cal
     <p class="atr-note">최소 +5%, 최대 +10%로 제한합니다. 표의 목표 매도가는 현재 입력된 ATR 기준 참고값입니다. 실제 매수 당시 확정한 익절가는 증권사에서 별도로 유지하세요.</p>
   </div>
   <div id="atrWarning" class="warning" role="alert"></div>
-  <p class="calc-note">엔진 하락폭은 각 엔진이 시작가에서 몇 % 내려가 끝나는지입니다(기본 40%). 엔진별 세트 수를 쉼표로 적으면 그 엔진만 세트 수가 바뀌고, 자동 세트금액일 때 엔진마다 같은 금액(전략자금 ÷ 엔진 수)을 배정합니다. 비워두면 모든 엔진에 엔진당 세트 수를 씁니다. 이미 체결된 엔진의 하락폭·세트 수를 바꾸면 매수선이 달라지니 주의하세요.</p>
+  <p class="calc-note">엔진 하락폭은 각 엔진이 시작가에서 몇 % 내려가 끝나는지입니다(기본 40%). "엔진 시작가에서 첫 매수"를 켜면 E1-01이 기준고점과 같은 가격이 되고, 모든 매수선이 한 칸씩 위로 올라갑니다(각 엔진의 첫 세트 = 엔진 시작가). 끄면 이전처럼 시작가에서 한 칸 내려간 가격이 첫 매수입니다. 엔진별 세트 수를 쉼표로 적으면 그 엔진만 세트 수가 바뀌고, 자동 세트금액일 때 엔진마다 같은 금액(전략자금 ÷ 엔진 수)을 배정합니다. 비워두면 모든 엔진에 엔진당 세트 수를 씁니다. 이미 체결된 엔진의 하락폭·세트 수를 바꾸면 매수선이 달라지니 주의하세요.</p>
   <div class="growth">
     <div class="growth-top">
       <div id="growthStatus" class="growth-status">증액 진행 중</div>
@@ -452,6 +453,7 @@ var PAGES=["overview","table","settings","tax","data"];
 var DEFAULT_STATE={
   version:7,
   engineDropPct:40,
+  firstBuyAtHigh:true,
   engineSetsOverride:"",
   setsPerAccount:3,
   taxRealizedKrw:0,
@@ -517,6 +519,7 @@ function normalizeState(value){
   var drop=Number(s.engineDropPct);
   s.engineDropPct=Number.isFinite(drop)&&drop>=5&&drop<=90?drop:DEFAULT_STATE.engineDropPct;
   s.engineSetsOverride=formatSetsOverride(parseSetsOverride(s.engineSetsOverride));
+  s.firstBuyAtHigh=typeof s.firstBuyAtHigh==="boolean"?s.firstBuyAtHigh:DEFAULT_STATE.firstBuyAtHigh;
   s.setsPerAccount=Math.max(1,Math.min(500,Math.floor(finitePositive(s.setsPerAccount,DEFAULT_STATE.setsPerAccount))));
   s.taxRealizedKrw=Number.isFinite(Number(s.taxRealizedKrw))?Number(s.taxRealizedKrw):0;
   s.taxDeductionKrw=Math.max(0,Number.isFinite(Number(s.taxDeductionKrw))?Number(s.taxDeductionKrw):DEFAULT_STATE.taxDeductionKrw);
@@ -694,6 +697,9 @@ function getDerivedState(){
   var engines=[];
   var totalActualAllocation=0;
   var globalIndex=0;
+  // 첫 매수 = 엔진 시작가면 세트 i(0부터)는 시작가에서 i칸 아래, 아니면 i+1칸 아래
+  var offset=state.firstBuyAtHigh?0:1;
+  var prevLine=null;
   for(var engineIndex=0;engineIndex<state.engineCount;engineIndex++){
     var start=state.refHigh*Math.pow(ratio,engineIndex);
     var sets=engineSets(engineIndex);
@@ -702,8 +708,8 @@ function getDerivedState(){
     var actual=0;
     totalGoalAllocation+=engineSetAmount*sets;
     for(var i=0;i<sets;i++){
-      var buyPrice=start*(1-drop*(i+1)/sets);
-      var previousPrice=i===0?start:start*(1-drop*i/sets);
+      var buyPrice=start*(1-drop*(i+offset)/sets);
+      var previousPrice=i>0?start*(1-drop*(i-1+offset)/sets):(offset===0&&prevLine!==null?prevLine:start);
       var dropPct=(buyPrice/previousPrice-1)*100;
       var quantity=buyPrice>0?Math.floor(engineSetAmount/buyPrice):0;
       var actualAmount=quantity*buyPrice;
@@ -724,6 +730,7 @@ function getDerivedState(){
       });
       actual+=actualAmount;
       globalIndex++;
+      prevLine=buyPrice;
     }
     totalActualAllocation+=actual;
     engines.push({index:engineIndex,start:start,end:start*ratio,sets:sets,setAmount:engineSetAmount,rows:rows,actualAllocation:actual});
@@ -739,7 +746,7 @@ function getDerivedState(){
     setAmount:setAmount,
     setsOverridden:overridden,
     accountCount:Math.ceil(totalSets/state.setsPerAccount),
-    bottomPrice:state.refHigh*Math.pow(ratio,state.engineCount),
+    bottomPrice:engines.length?engines[engines.length-1].rows[engines[engines.length-1].rows.length-1].buyPrice:state.refHigh,
     totalGoalAllocation:totalGoalAllocation,
     totalActualAllocation:totalActualAllocation,
     capitalDifference:state.currentCapital-totalGoalAllocation,
@@ -755,6 +762,7 @@ function updateForm(){
   el("engineCount").value=state.engineCount;
   el("setsPerEngine").value=state.setsPerEngine;
   el("engineDropPct").value=state.engineDropPct;
+  el("firstBuyAtHigh").checked=state.firstBuyAtHigh;
   el("engineSetsOverride").value=state.engineSetsOverride;
   el("setsPerAccount").value=state.setsPerAccount;
   el("taxRealizedKrw").value=state.taxRealizedKrw;
@@ -1065,6 +1073,9 @@ function bindControls(){
   el("marketAutoRefresh").addEventListener("change",function(){state.marketAutoRefresh=el("marketAutoRefresh").checked;saveState();scheduleMarketRefresh();if(state.marketAutoRefresh&&getMarketApiKey())refreshMarketData(true);});
   el("refreshMarketBtn").addEventListener("click",function(){var key=el("marketApiKey").value.trim();if(key)setMarketApiKey(key);refreshMarketData(true);});
   document.addEventListener("visibilitychange",function(){if(!document.hidden&&state.marketAutoRefresh&&getMarketApiKey())refreshMarketData(true);});
+  el("firstBuyAtHigh").addEventListener("change",function(){
+    state.firstBuyAtHigh=el("firstBuyAtHigh").checked;render();saveState();
+  });
   el("autoSetAmount").addEventListener("change",function(){
     state.autoSetAmount=el("autoSetAmount").checked;updateForm();render();saveState();
   });
@@ -1137,7 +1148,7 @@ var CLOUD_OWNER_KEY="sandwich-account-owner-v1";
 var CLOUD_BACKUP_KEY="sandwich-before-cloud-import-v1";
 var CLOUD_REQUIRED_FIELDS=["currentCapital","refHigh","engineCount","setsPerEngine","takeProfitMode","takeProfitPct","autoSetAmount","manualSetAmount","totalRealizedProfit","growthBaseProfit","atr14","atrPrevClose","atrDataDate"];
 // v7 항목: 이전 버전이 저장한 계정 데이터에는 없을 수 있으므로 필수로 검사하지 않음
-var CLOUD_FIELDS=CLOUD_REQUIRED_FIELDS.concat(["engineDropPct","engineSetsOverride","setsPerAccount","taxRealizedKrw","taxDeductionKrw","taxBufferPct","taxFxRate","heldThrough"]);
+var CLOUD_FIELDS=CLOUD_REQUIRED_FIELDS.concat(["firstBuyAtHigh","engineDropPct","engineSetsOverride","setsPerAccount","taxRealizedKrw","taxDeductionKrw","taxBufferPct","taxFxRate","heldThrough"]);
 var cloudSession=null,cloudMeta={revision:0,fingerprint:"",linked:false},cloudBusy=false,cloudTimer=null,cloudInterval=null,cloudConflict=false,cloudRemote=null,cloudEpoch=0,cloudRefreshPromise=null;
 function cloudSnapshot(){var out={};CLOUD_FIELDS.forEach(function(k){out[k]=state[k]});return out}
 function cloudFingerprint(value){return JSON.stringify(CLOUD_FIELDS.map(function(k){return value[k]}))}
