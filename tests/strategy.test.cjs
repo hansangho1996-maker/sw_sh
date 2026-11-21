@@ -137,4 +137,27 @@ test("first buy at engine start",()=>{
  const all=d.engines.flatMap(e=>e.rows.map(r=>r.buyPrice));assert(new Set(all.map(x=>x.toFixed(6))).size===180,"no duplicate lines");
 });
 
+// 12. 엔진별 하락폭: 40,40,40,40,50,50
+test("per-engine drop override",()=>{
+ const {t,elems}=device();
+ elems.engineDropOverride.value="40,40,40,40,50,50";elems.engineDropOverride.handlers.input();
+ assert(t.state().engineDropOverride==="40,40,40,40,50,50","from input");
+ const d=t.derive();const s4=278*Math.pow(0.6,4);
+ near(d.engines[3].end,s4,"E4 end unchanged");near(d.engines[4].start,s4,"E5 start");near(d.engines[4].end,s4*0.5,"E5 end -50%");
+ near(d.engines[5].start,s4*0.5,"E6 start");near(d.engines[5].end,s4*0.25,"E6 end");
+ near(d.engines[4].rows[1].buyPrice,s4*(1-0.5/30),"E5-02 step 50%");
+ near(d.bottomPrice,s4*0.5*(1-0.5*29/30),"bottom");
+ for(let e=0;e<4;e++)near(d.engines[e].start,278*Math.pow(0.6,e),"E1-4 same");
+ assert(elems.strategySubtitle.textContent.includes("하락폭 40·40·40·40·50·50%"),elems.strategySubtitle.textContent);
+ // 빈 칸·범위 밖 값은 엔진당 하락폭
+ assert(t.normalize({engineDropOverride:"40,,95,50"}).engineDropOverride==="40,,,50","normalize");
+ t.state().engineDropOverride="";near(t.derive().engines[5].end,278*Math.pow(0.6,6),"cleared");
+ // 현재 엔진 표시
+ Object.assign(t.state(),{engineDropOverride:"40,40,40,40,50,50",livePrice:20});t.render();assert(elems.currentEngine.textContent==="E5","current engine "+elems.currentEngine.textContent);
+ // 이전 버전 계정 데이터에 항목이 없어도 이 기기 값 유지
+ const legacy={currentCapital:80000,refHigh:278,engineCount:6,setsPerEngine:30,takeProfitMode:"atr",takeProfitPct:6,autoSetAmount:true,manualSetAmount:444.44,totalRealizedProfit:0,growthBaseProfit:0,atr14:0,atrPrevClose:0,atrDataDate:""};
+ assert(t.validateRow({state:legacy,revision:1}).state.engineDropOverride==="40,40,40,40,50,50","legacy keeps local");
+ assert(t.fields.includes("engineDropOverride"),"synced");
+});
+
 console.log("PASS "+results.length+" tests: "+results.join(", "));
