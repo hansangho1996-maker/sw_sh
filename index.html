@@ -43,6 +43,10 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;ma
 .field{display:flex;flex-direction:column;gap:6px;min-width:0}
 .field label{font-size:12px;color:var(--muted)}
 .field input[type=number],.field input[type=text],.field select{width:100%;min-height:46px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);font-size:16px;font-variant-numeric:tabular-nums}
+.engine-inputs{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px}
+.engine-inputs .engine-input{display:flex;align-items:center;gap:6px;min-width:0}
+.engine-inputs .engine-input span{font-size:12px;font-weight:700;color:var(--muted);min-width:22px}
+.engine-inputs .engine-input input{min-height:42px;padding:8px 10px}
 .field input:focus,.field select:focus,.profit-add input:focus{outline:3px solid #f6c45366;border-color:var(--bread)}
 .field input:disabled,.field select:disabled{background:#f7f2e9;color:#796d60}
 .amount-control{display:grid;grid-template-columns:auto minmax(120px,1fr);align-items:center;gap:9px}
@@ -268,7 +272,8 @@ dialog{border:1px solid var(--line);border-radius:16px;max-width:440px;width:cal
     <div class="field"><label for="engineCount">엔진 수 (1~20개)</label><input id="engineCount" type="number" inputmode="numeric" min="1" max="20" step="1" value="6"></div>
     <div class="field"><label for="setsPerEngine">엔진당 세트 수</label><input id="setsPerEngine" type="number" inputmode="numeric" min="1" max="500" step="1" value="30"></div>
     <div class="field"><label for="engineDropPct">엔진당 하락폭 (%)</label><input id="engineDropPct" type="number" inputmode="decimal" min="5" max="90" step="1" value="40"></div>
-    <div class="field"><label for="engineSetsOverride">엔진별 세트 수 (선택)</label><input id="engineSetsOverride" type="text" inputmode="numeric" autocomplete="off" placeholder="예: 30,30,30,30,10,10"></div>
+    <div class="field wide"><label>엔진별 하락폭 % (선택 · 비우면 엔진당 하락폭)</label><div id="engineDropInputs" class="engine-inputs"></div></div>
+    <div class="field wide"><label>엔진별 세트 수 (선택 · 비우면 엔진당 세트 수)</label><div id="engineSetsInputs" class="engine-inputs"></div></div>
     <div class="field"><label for="setsPerAccount">계좌당 세트 수</label><input id="setsPerAccount" type="number" inputmode="numeric" min="1" max="500" step="1" value="3"></div>
     <div class="field"><label for="takeProfitMode">익절 방식</label><select id="takeProfitMode"><option value="atr">ATR 가변 익절 (기본)</option><option value="fixed">고정 익절 (직접 설정)</option></select></div>
     <div class="field"><label for="takeProfitPct">고정 익절률 (%)</label><input id="takeProfitPct" type="number" inputmode="decimal" min="0" step="0.1" value="6"></div>
@@ -296,7 +301,7 @@ dialog{border:1px solid var(--line);border-radius:16px;max-width:440px;width:cal
     <p class="atr-note">최소 +5%, 최대 +10%로 제한합니다. 표의 목표 매도가는 현재 입력된 ATR 기준 참고값입니다. 실제 매수 당시 확정한 익절가는 증권사에서 별도로 유지하세요.</p>
   </div>
   <div id="atrWarning" class="warning" role="alert"></div>
-  <p class="calc-note">엔진 하락폭은 각 엔진이 시작가에서 몇 % 내려가 끝나는지입니다(기본 40%). 각 엔진의 첫 세트는 엔진 시작가에서 삽니다(E1-01 = 기준고점). 엔진별 세트 수를 쉼표로 적으면 그 엔진만 세트 수가 바뀌고, 자동 세트금액일 때 엔진마다 같은 금액(전략자금 ÷ 엔진 수)을 배정합니다. 비워두면 모든 엔진에 엔진당 세트 수를 씁니다. 이미 체결된 엔진의 하락폭·세트 수를 바꾸면 매수선이 달라지니 주의하세요.</p>
+  <p class="calc-note">엔진 하락폭은 각 엔진이 시작가에서 몇 % 내려가 끝나는지입니다(기본 40%). 각 엔진의 첫 세트는 엔진 시작가에서 삽니다(E1-01 = 기준고점). 엔진별 하락폭을 쉼표로 적으면 그 엔진만 하락폭이 바뀌고, 다음 엔진은 앞 엔진이 끝난 가격에서 시작합니다. 비워두면 모든 엔진에 엔진당 하락폭을 씁니다. 엔진별 세트 수를 쉼표로 적으면 그 엔진만 세트 수가 바뀌고, 자동 세트금액일 때 엔진마다 같은 금액(전략자금 ÷ 엔진 수)을 배정합니다. 비워두면 모든 엔진에 엔진당 세트 수를 씁니다. 이미 체결된 엔진의 하락폭·세트 수를 바꾸면 매수선이 달라지니 주의하세요.</p>
   <div class="growth">
     <div class="growth-top">
       <div id="growthStatus" class="growth-status">증액 진행 중</div>
@@ -453,6 +458,7 @@ var DEFAULT_STATE={
   version:7,
   engineDropPct:40,
   engineSetsOverride:"",
+  engineDropOverride:"",
   setsPerAccount:3,
   taxRealizedKrw:0,
   taxDeductionKrw:2500000,
@@ -517,6 +523,7 @@ function normalizeState(value){
   var drop=Number(s.engineDropPct);
   s.engineDropPct=Number.isFinite(drop)&&drop>=5&&drop<=90?drop:DEFAULT_STATE.engineDropPct;
   s.engineSetsOverride=formatSetsOverride(parseSetsOverride(s.engineSetsOverride));
+  s.engineDropOverride=formatSetsOverride(parseDropOverride(s.engineDropOverride));
   s.setsPerAccount=Math.max(1,Math.min(500,Math.floor(finitePositive(s.setsPerAccount,DEFAULT_STATE.setsPerAccount))));
   s.taxRealizedKrw=Number.isFinite(Number(s.taxRealizedKrw))?Number(s.taxRealizedKrw):0;
   s.taxDeductionKrw=Math.max(0,Number.isFinite(Number(s.taxDeductionKrw))?Number(s.taxDeductionKrw):DEFAULT_STATE.taxDeductionKrw);
@@ -531,7 +538,8 @@ function normalizeState(value){
 function parseSetsOverride(value){
   if(Array.isArray(value))value=value.join(",");
   if(typeof value!=="string"||!value.trim())return [];
-  return value.split(/[,\s]+/).slice(0,20).map(function(part){
+  return value.split(",").slice(0,20).map(function(part){
+    part=part.trim();
     var n=Number(part);return Number.isInteger(n)&&n>=1&&n<=500?n:null;
   });
 }
@@ -546,7 +554,24 @@ function parseSetLabel(value){
   var e=Number(m[1])-1,i=Number(m[2])-1;
   return e>=0&&i>=0?{engine:e,set:i}:null;
 }
-function dropRatio(){return 1-state.engineDropPct/100}
+// "40,40,,50" -> [40,40,null,50]; 5~90% 밖이거나 비어 있으면 엔진당 하락폭 사용
+function parseDropOverride(value){
+  if(Array.isArray(value))value=value.join(",");
+  if(typeof value!=="string"||!value.trim())return [];
+  return value.split(",").slice(0,20).map(function(part){
+    part=part.trim();
+    if(part==="")return null;
+    var n=Number(part);return Number.isFinite(n)&&n>=5&&n<=90?n:null;
+  });
+}
+function engineDropPctAt(engineIndex){
+  var list=parseDropOverride(state.engineDropOverride);
+  return list[engineIndex]||state.engineDropPct;
+}
+function hasDropOverride(){
+  for(var e=0;e<state.engineCount;e++)if(engineDropPctAt(e)!==state.engineDropPct)return true;
+  return false;
+}
 function engineSets(engineIndex){
   var list=parseSetsOverride(state.engineSetsOverride);
   return list[engineIndex]||state.setsPerEngine;
@@ -684,7 +709,6 @@ function getTakeProfitInfo(){
 }
 function getDerivedState(){
   var tpInfo=getTakeProfitInfo();
-  var ratio=dropRatio(),drop=1-ratio;
   var totalSets=0;
   for(var e0=0;e0<state.engineCount;e0++)totalSets+=engineSets(e0);
   var overridden=hasSetsOverride();
@@ -696,8 +720,12 @@ function getDerivedState(){
   var globalIndex=0;
   // 첫 매수 = 엔진 시작가: 세트 i(0부터)는 시작가에서 i칸 아래
   var prevLine=null;
+  var nextStart=state.refHigh;
   for(var engineIndex=0;engineIndex<state.engineCount;engineIndex++){
-    var start=state.refHigh*Math.pow(ratio,engineIndex);
+    // 엔진 시작가 = 앞 엔진이 끝난 가격 (엔진마다 하락폭이 다를 수 있음)
+    var start=nextStart;
+    var drop=engineDropPctAt(engineIndex)/100,ratio=1-drop;
+    nextStart=start*ratio;
     var sets=engineSets(engineIndex);
     var engineSetAmount=state.autoSetAmount&&overridden?state.currentCapital/state.engineCount/sets:setAmount;
     var rows=[];
@@ -729,7 +757,7 @@ function getDerivedState(){
       prevLine=buyPrice;
     }
     totalActualAllocation+=actual;
-    engines.push({index:engineIndex,start:start,end:start*ratio,sets:sets,setAmount:engineSetAmount,rows:rows,actualAllocation:actual});
+    engines.push({index:engineIndex,start:start,end:start*ratio,dropPct:drop*100,sets:sets,setAmount:engineSetAmount,rows:rows,actualAllocation:actual});
   }
   var nextGrowthThreshold=state.growthBaseProfit+state.currentCapital*0.10;
   return{
@@ -758,7 +786,7 @@ function updateForm(){
   el("engineCount").value=state.engineCount;
   el("setsPerEngine").value=state.setsPerEngine;
   el("engineDropPct").value=state.engineDropPct;
-  el("engineSetsOverride").value=state.engineSetsOverride;
+  buildEngineInputs();
   el("setsPerAccount").value=state.setsPerAccount;
   el("taxRealizedKrw").value=state.taxRealizedKrw;
   el("taxDeductionKrw").value=state.taxDeductionKrw;
@@ -810,10 +838,52 @@ function observePrice(price){state.livePrice=price}
 function renderPortfolio(){
  const d=getDerivedState(),all=d.engines.flatMap(e=>e.rows.map(r=>({e:e.index,r})));
  const next=state.livePrice>0?all.find(x=>x.r.buyPrice<state.livePrice):all[0];
- text('currentEngine',state.livePrice>0?'E'+Math.min(state.engineCount,1+Math.max(0,Math.floor(Math.log(state.livePrice/state.refHigh)/Math.log(dropRatio())))):'—');
+ var cur=null;if(state.livePrice>0){cur=d.engines.length;for(var ci=0;ci<d.engines.length;ci++){if(state.livePrice>d.engines[ci].end){cur=ci+1;break}}}
+ text('currentEngine',cur?'E'+cur:'—');
  text('nextBuy',next?'E'+(next.e+1)+'-'+next.r.number+' '+priceFmt.format(next.r.buyPrice):'전체 매수구간 아래');
  text('overviewHigh',priceFmt.format(state.refHigh));
  text('defensePrice',priceFmt.format(d.bottomPrice)+' ('+((d.bottomPrice/state.refHigh-1)*100).toFixed(1)+'%)');
+}
+// 엔진별 입력칸(숫자 자판용): 엔진마다 숫자 칸 하나, 비우면 기본값
+function buildEngineInputs(){
+  buildEngineInputRow("engineDropInputs","engineDropOverride",parseDropOverride,state.engineDropPct,"decimal",5,90);
+  buildEngineInputRow("engineSetsInputs","engineSetsOverride",parseSetsOverride,state.setsPerEngine,"numeric",1,500);
+}
+function buildEngineInputRow(containerId,key,parse,fallback,mode,min,max){
+  var box=el(containerId),list=parse(state[key]);
+  if(box.getAttribute("data-count")===String(state.engineCount)&&box.children.length===state.engineCount){
+    // 칸 수가 같으면 값만 갱신(입력 중인 칸은 건드리지 않음)
+    for(var k=0;k<state.engineCount;k++){
+      var inp=box.children[k].children[1];
+      inp.placeholder=String(fallback);
+      if(inp!==document.activeElement)inp.value=list[k]===null||list[k]===undefined?"":String(list[k]);
+    }
+    return;
+  }
+  box.textContent="";
+  for(var e=0;e<state.engineCount;e++){
+    var wrap=document.createElement("label");wrap.className="engine-input";
+    var tag=document.createElement("span");tag.textContent="E"+(e+1);
+    var input=document.createElement("input");
+    input.type="number";input.setAttribute("inputmode",mode);input.min=min;input.max=max;input.step=mode==="decimal"?"0.1":"1";
+    input.placeholder=String(fallback);input.value=list[e]===null||list[e]===undefined?"":String(list[e]);
+    input.setAttribute("aria-label","E"+(e+1)+(key==="engineDropOverride"?" 하락폭 %":" 세트 수"));
+    input.addEventListener("input",engineInputHandler(containerId,key,parse));
+    wrap.appendChild(tag);wrap.appendChild(input);box.appendChild(wrap);
+  }
+  box.setAttribute("data-count",String(state.engineCount));
+}
+function engineInputHandler(containerId,key,parse){
+  return function(){
+    var values=Array.prototype.map.call(el(containerId).children,function(w){return w.children[1].value});
+    state[key]=formatSetsOverride(parse(values.map(function(v){return String(v).trim()}).join(",")));
+    render();saveState();
+  };
+}
+function dropLabel(){
+ if(!hasDropOverride())return "엔진 -"+state.engineDropPct+"%";
+ var list=[];for(var e=0;e<state.engineCount;e++)list.push(engineDropPctAt(e));
+ return "하락폭 "+list.join("·")+"%";
 }
 function strategyLabel(){
  if(!hasSetsOverride())return state.engineCount+"엔진 × "+state.setsPerEngine+"세트";
@@ -823,7 +893,7 @@ function strategyLabel(){
 function renderEngine(){
  var data=getDerivedState(),engine=data.engines[state.selectedEngine],tbody=el('engineRows');
  tbody.textContent='';el('mobileRows').textContent='';
- text('engineRange',priceFmt.format(engine.start)+' → '+priceFmt.format(engine.end));
+ text('engineRange',priceFmt.format(engine.start)+' → '+priceFmt.format(engine.end)+' (-'+engine.dropPct+'%)');
  text('engineSetCount',engine.sets);text('engineSetAmount',money.format(engine.setAmount));
  text('engineActualAllocation',money.format(engine.actualAllocation));
  engine.rows.forEach(function(r){
@@ -942,7 +1012,7 @@ function switchPage(page){
 function render(){
   renderPage();
   var d=getDerivedState();
-  text("strategySubtitle","SOXL "+strategyLabel()+" · 엔진 -"+state.engineDropPct+"% · ATR 익절");
+  text("strategySubtitle","SOXL "+strategyLabel()+" · "+dropLabel()+" · ATR 익절");
   text("strategyTitle","SOXL 샌드위치 "+strategyLabel()+" · 전략 요약");
   document.title="샌드위치 매매 · SOXL "+state.engineCount+"E"+(hasSetsOverride()?"":state.setsPerEngine);
   renderMarketPanel();
@@ -1002,6 +1072,7 @@ function render(){
   renderTabs();
   renderEngine();
   renderTax(d);
+  if(el("engineDropInputs").getAttribute("data-count")!==String(state.engineCount))buildEngineInputs();
 }
 function setNumberFromInput(id,key,minimum,integer,capitalEdit){
   var input=el(id);
@@ -1037,11 +1108,6 @@ function bindControls(){
     state.taxBufferPct=v;render();saveState();
   });
   el("taxBufferPct").addEventListener("blur",function(){updateForm()});
-  el("engineSetsOverride").addEventListener("input",function(){
-    state.engineSetsOverride=formatSetsOverride(parseSetsOverride(el("engineSetsOverride").value));
-    render();saveState();
-  });
-  el("engineSetsOverride").addEventListener("blur",function(){updateForm()});
   el("heldThrough").addEventListener("input",function(){
     var raw=el("heldThrough").value;
     if(raw.trim()&&!parseSetLabel(raw))return;
@@ -1140,7 +1206,7 @@ var CLOUD_OWNER_KEY="sandwich-account-owner-v1";
 var CLOUD_BACKUP_KEY="sandwich-before-cloud-import-v1";
 var CLOUD_REQUIRED_FIELDS=["currentCapital","refHigh","engineCount","setsPerEngine","takeProfitMode","takeProfitPct","autoSetAmount","manualSetAmount","totalRealizedProfit","growthBaseProfit","atr14","atrPrevClose","atrDataDate"];
 // v7 항목: 이전 버전이 저장한 계정 데이터에는 없을 수 있으므로 필수로 검사하지 않음
-var CLOUD_FIELDS=CLOUD_REQUIRED_FIELDS.concat(["engineDropPct","engineSetsOverride","setsPerAccount","taxRealizedKrw","taxDeductionKrw","taxBufferPct","taxFxRate","heldThrough"]);
+var CLOUD_FIELDS=CLOUD_REQUIRED_FIELDS.concat(["engineDropPct","engineSetsOverride","engineDropOverride","setsPerAccount","taxRealizedKrw","taxDeductionKrw","taxBufferPct","taxFxRate","heldThrough"]);
 var cloudSession=null,cloudMeta={revision:0,fingerprint:"",linked:false},cloudBusy=false,cloudTimer=null,cloudInterval=null,cloudConflict=false,cloudRemote=null,cloudEpoch=0,cloudRefreshPromise=null;
 function cloudSnapshot(){var out={};CLOUD_FIELDS.forEach(function(k){out[k]=state[k]});return out}
 function cloudFingerprint(value){return JSON.stringify(CLOUD_FIELDS.map(function(k){return value[k]}))}
