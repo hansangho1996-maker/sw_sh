@@ -174,11 +174,11 @@ dialog{border:1px solid var(--line);border-radius:16px;max-width:440px;width:cal
 [hidden]{display:none!important}
 .wrap{padding-bottom:calc(108px + env(safe-area-inset-bottom))}
 .app-page{min-width:0}.app-page>.section:first-child{margin-top:0}
-.app-menu{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:960px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;padding:9px 10px calc(9px + env(safe-area-inset-bottom));background:#fffaf2;border-top:1px solid var(--line);box-shadow:0 -4px 20px #47341b0c;z-index:10}
+.app-menu{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:960px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:9px 10px calc(9px + env(safe-area-inset-bottom));background:#fffaf2;border-top:1px solid var(--line);box-shadow:0 -4px 20px #47341b0c;z-index:10}
 .app-menu button{min-height:52px;border:1px solid transparent;border-radius:12px;background:transparent;color:var(--muted);font-size:14px;font-weight:800;cursor:pointer;touch-action:manipulation}
 .app-menu button[aria-pressed="true"]{background:#fff0d8;border-color:var(--bread);color:#744313}
 .app-menu button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
-.cloud-panel{margin-bottom:14px}.cloud-panel .section-title{align-items:flex-start;gap:10px;flex-wrap:wrap}.cloud-panel #cloudStatus{font-size:12px;line-height:1.5;color:var(--muted);max-width:100%;overflow-wrap:anywhere}.cloud-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.cloud-actions .btn{min-height:46px}.cloud-user{font-weight:700;overflow-wrap:anywhere}.cloud-choices{padding:12px;margin-top:12px;border:1px solid var(--cheese);border-radius:12px;background:#fff8df}.cloud-sql{max-height:260px;overflow:auto;white-space:pre;font-size:11px;background:#faf7ef;padding:12px;border-radius:10px;margin-top:12px}.app-menu button{font-size:13px}
+.cloud-panel{margin-bottom:14px}.cloud-panel .section-title{align-items:flex-start;gap:10px;flex-wrap:wrap}.cloud-panel #cloudStatus{font-size:12px;line-height:1.5;color:var(--muted);max-width:100%;overflow-wrap:anywhere}.cloud-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.cloud-actions .btn{min-height:46px}.cloud-user{font-weight:700;overflow-wrap:anywhere}.cloud-choices{padding:12px;margin-top:12px;border:1px solid var(--cheese);border-radius:12px;background:#fff8df}.cloud-sql{max-height:260px;overflow:auto;white-space:pre;font-size:11px;background:#faf7ef;padding:12px;border-radius:10px;margin-top:12px}.app-menu button{font-size:12px;padding:0 2px}
 </style>
 </head>
 <body>
@@ -251,7 +251,7 @@ dialog{border:1px solid var(--line);border-radius:16px;max-width:440px;width:cal
   <div class="table-wrap" role="region" aria-label="매수 가격과 수량 표" tabindex="0">
     <table aria-label="세트별 매수 및 익절 가격">
       <thead><tr>
-        <th>세트번호</th><th>매수가</th><th>수량</th><th>실제 매수금액</th><th>목표 매도가</th><th>예상이익</th><th>현재가 대비</th><th>직전대비 하락률</th>
+        <th>세트번호</th><th>계좌</th><th>매수가</th><th>수량</th><th>실제 매수금액</th><th>목표 매도가</th><th>예상이익</th><th>현재가 대비</th><th>직전대비 하락률</th>
       </tr></thead>
       <tbody id="engineRows"></tbody>
     </table>
@@ -267,6 +267,9 @@ dialog{border:1px solid var(--line);border-radius:16px;max-width:440px;width:cal
     <div class="field"><label for="refHigh">E1 기준고점 ($)</label><input id="refHigh" type="number" inputmode="decimal" min="0.0001" step="0.0001" value="278"></div>
     <div class="field"><label for="engineCount">엔진 수 (1~20개)</label><input id="engineCount" type="number" inputmode="numeric" min="1" max="20" step="1" value="6"></div>
     <div class="field"><label for="setsPerEngine">엔진당 세트 수</label><input id="setsPerEngine" type="number" inputmode="numeric" min="1" max="500" step="1" value="30"></div>
+    <div class="field"><label for="engineDropPct">엔진당 하락폭 (%)</label><input id="engineDropPct" type="number" inputmode="decimal" min="5" max="90" step="1" value="40"></div>
+    <div class="field"><label for="engineSetsOverride">엔진별 세트 수 (선택)</label><input id="engineSetsOverride" type="text" inputmode="numeric" autocomplete="off" placeholder="예: 30,30,30,30,10,10"></div>
+    <div class="field"><label for="setsPerAccount">계좌당 세트 수</label><input id="setsPerAccount" type="number" inputmode="numeric" min="1" max="500" step="1" value="3"></div>
     <div class="field"><label for="takeProfitMode">익절 방식</label><select id="takeProfitMode"><option value="atr">ATR 가변 익절 (기본)</option><option value="fixed">고정 익절 (직접 설정)</option></select></div>
     <div class="field"><label for="takeProfitPct">고정 익절률 (%)</label><input id="takeProfitPct" type="number" inputmode="decimal" min="0" step="0.1" value="6"></div>
     <div class="field"><label for="atrDataDate">ATR 기준 일봉 날짜 (미국)</label><input id="atrDataDate" type="date"></div>
@@ -293,6 +296,7 @@ dialog{border:1px solid var(--line);border-radius:16px;max-width:440px;width:cal
     <p class="atr-note">최소 +5%, 최대 +10%로 제한합니다. 표의 목표 매도가는 현재 입력된 ATR 기준 참고값입니다. 실제 매수 당시 확정한 익절가는 증권사에서 별도로 유지하세요.</p>
   </div>
   <div id="atrWarning" class="warning" role="alert"></div>
+  <p class="calc-note">엔진 하락폭은 각 엔진이 시작가에서 몇 % 내려가 끝나는지입니다(기본 40%). 엔진별 세트 수를 쉼표로 적으면 그 엔진만 세트 수가 바뀌고, 자동 세트금액일 때 엔진마다 같은 금액(전략자금 ÷ 엔진 수)을 배정합니다. 비워두면 모든 엔진에 엔진당 세트 수를 씁니다. 이미 체결된 엔진의 하락폭·세트 수를 바꾸면 매수선이 달라지니 주의하세요.</p>
   <div class="growth">
     <div class="growth-top">
       <div id="growthStatus" class="growth-status">증액 진행 중</div>
@@ -316,6 +320,41 @@ dialog{border:1px solid var(--line);border-radius:16px;max-width:440px;width:cal
   </div>
   <p class="calc-note">정수주 잔여자금은 전체 매수표를 정수주로 배정했을 때 남는 계산상 자금이며, 실제 증권계좌 예수금이 아닙니다.</p>
   <div id="budgetWarning" class="warning" role="alert"></div>
+</section>
+</div>
+<div id="page-tax" class="app-page" hidden>
+<section class="panel section" aria-label="연말 절세">
+  <div class="section-title"><h2>연말 절세 · 손익 상쇄</h2><span style="font-size:11px;color:var(--muted)">팔고 같은 날 다시 사기 · 엔진은 그대로</span></div>
+  <div class="form-grid">
+    <div class="field wide"><label for="taxRealizedKrw">올해 실현이익 합계 (원) · 두 증권사 양도세 조회 화면 합산</label><input id="taxRealizedKrw" type="number" inputmode="numeric" step="10000" value="0"></div>
+    <div class="field"><label for="taxDeductionKrw">기본공제 (원)</label><input id="taxDeductionKrw" type="number" inputmode="numeric" min="0" step="10000" value="2500000"></div>
+    <div class="field"><label for="taxBufferPct">여유분 (%)</label><input id="taxBufferPct" type="number" inputmode="decimal" min="0" max="100" step="1" value="10"></div>
+    <div class="field"><label for="taxFxRate">환율 (원/달러)</label><input id="taxFxRate" type="number" inputmode="decimal" min="1" step="1" value="1450"></div>
+    <div class="field"><label for="heldThrough">보유 마지막 세트 (선택)</label><input id="heldThrough" type="text" autocomplete="off" placeholder="예: E4-30 · 비우면 현재가로 추정"></div>
+  </div>
+  <div class="calc-grid" style="margin-top:12px">
+    <div class="calc-item"><span>목표 손실 (여유분 포함)</span><b id="taxTarget">—</b></div>
+    <div class="calc-item"><span>매도할 계좌</span><b id="taxPickedCount">—</b></div>
+    <div class="calc-item"><span>예상 실현손실</span><b id="taxPickedLoss">—</b></div>
+    <div class="calc-item"><span>예상 세금 (전 → 후)</span><b id="taxBeforeAfter">—</b></div>
+  </div>
+  <p id="taxDeadline" class="calc-note"></p>
+  <div id="taxWarning" class="warning" role="alert"></div>
+  <div class="table-wrap" role="region" aria-label="계좌별 평가손익" tabindex="0">
+    <table aria-label="계좌별 평가손익과 매도 대상">
+      <thead><tr><th>계좌</th><th>세트</th><th>보유수량</th><th>평가손익($)</th><th>평가손익(원)</th><th>누적(원)</th><th>매도</th></tr></thead>
+      <tbody id="taxRows"></tbody>
+    </table>
+  </div>
+  <p id="taxBasis" class="calc-note"></p>
+  <div class="calc-note" style="line-height:1.7">
+    <b>실행 규칙</b><br>
+    1. 표시된 계좌는 <b>전량 매도 후 같은 날, 같은 계좌에서 같은 수량을 지정가로 재매수</b>합니다. 일부만 팔면 선입선출·이동평균 때문에 계산이 달라집니다.<br>
+    2. 매수표·익절가·E1은 바꾸지 않습니다. 재매수한 주식도 원래 세트의 익절가에서 팝니다. 바뀌는 건 세금 장부(취득가)뿐입니다.<br>
+    3. E1 리셋은 연말이 아니라 엔진의 모든 세트가 익절돼 비었을 때만 합니다.<br>
+    4. 양도세는 사람 단위입니다. 키움·나무 손익을 합쳐 한 번에 신고하고 기본공제는 한 번만 받습니다.<br>
+    5. 평가손익은 표의 매수가와 위 환율로 계산한 <b>추정치</b>입니다. 실제 세금은 매수·매도 결제일 환율로 계산되니, 실행 전 증권사 양도세 시뮬레이터로 확인하세요.
+  </div>
 </section>
 </div>
 <div id="page-data" class="app-page" hidden><div class="section-title"><h2>계정 · 데이터 관리</h2></div>
@@ -401,7 +440,7 @@ commit;
 </div>
 <footer>실제 주문은 증권사 앱에서 직접 진행하세요. 이 페이지는 계산표이며 자동매매를 하지 않습니다.</footer>
 </div>
-<nav class="app-menu" aria-label="앱 메뉴"><button id="menu-overview" type="button" aria-controls="page-overview" aria-pressed="false">현황</button><button id="menu-table" type="button" aria-controls="page-table" aria-pressed="true">매수표</button><button id="menu-settings" type="button" aria-controls="page-settings" aria-pressed="false">전략 설정</button><button id="menu-data" type="button" aria-controls="page-data" aria-pressed="false">계정·데이터</button></nav>
+<nav class="app-menu" aria-label="앱 메뉴"><button id="menu-overview" type="button" aria-controls="page-overview" aria-pressed="false">현황</button><button id="menu-table" type="button" aria-controls="page-table" aria-pressed="true">매수표</button><button id="menu-settings" type="button" aria-controls="page-settings" aria-pressed="false">전략 설정</button><button id="menu-tax" type="button" aria-controls="page-tax" aria-pressed="false">연말 절세</button><button id="menu-data" type="button" aria-controls="page-data" aria-pressed="false">계정·데이터</button></nav>
 
 <script>
 (function(){
@@ -409,8 +448,17 @@ commit;
 var STORAGE_KEY="sandwich-strategy-state-v1";
 var LEGACY_KEY="sandwich-v6-state";
 var MARKET_API_KEY="sandwich-twelve-data-key-v1";
+var PAGES=["overview","table","settings","tax","data"];
 var DEFAULT_STATE={
-  version:6,
+  version:7,
+  engineDropPct:40,
+  engineSetsOverride:"",
+  setsPerAccount:3,
+  taxRealizedKrw:0,
+  taxDeductionKrw:2500000,
+  taxBufferPct:10,
+  taxFxRate:1450,
+  heldThrough:"",
   activePage:"table",
   engineCount:6,
   currentCapital:80000,
@@ -443,7 +491,7 @@ function finitePositive(value,fallback){var n=Number(value);return Number.isFini
 function normalizeState(value){
   var s=Object.assign({},DEFAULT_STATE,value||{});
   if(!value||Number(value.version)<4){s.setsPerEngine=30;s.takeProfitMode="atr";s.positions={};s.trades=[];s.cashBalance=s.currentCapital;s.pendingHigh=s.refHigh;}
-  s.activePage=["overview","table","settings","data"].includes(s.activePage)?s.activePage:"table";
+  s.activePage=PAGES.includes(s.activePage)?s.activePage:"table";
   s.engineCount=Math.max(1,Math.min(20,Math.floor(finitePositive(s.engineCount,6))));
   s.positions=s.positions&&typeof s.positions==="object"&&!Array.isArray(s.positions)?s.positions:{};
   s.trades=Array.isArray(s.trades)?s.trades:[];
@@ -466,8 +514,46 @@ function normalizeState(value){
   s.totalRealizedProfit=Number.isFinite(Number(s.totalRealizedProfit))?Number(s.totalRealizedProfit):0;
   s.growthBaseProfit=Number.isFinite(Number(s.growthBaseProfit))?Number(s.growthBaseProfit):s.totalRealizedProfit;
   s.selectedEngine=Math.max(0,Math.min(s.engineCount-1,Math.floor(Number(s.selectedEngine)||0)));
-  s.version=6;
+  var drop=Number(s.engineDropPct);
+  s.engineDropPct=Number.isFinite(drop)&&drop>=5&&drop<=90?drop:DEFAULT_STATE.engineDropPct;
+  s.engineSetsOverride=formatSetsOverride(parseSetsOverride(s.engineSetsOverride));
+  s.setsPerAccount=Math.max(1,Math.min(500,Math.floor(finitePositive(s.setsPerAccount,DEFAULT_STATE.setsPerAccount))));
+  s.taxRealizedKrw=Number.isFinite(Number(s.taxRealizedKrw))?Number(s.taxRealizedKrw):0;
+  s.taxDeductionKrw=Math.max(0,Number.isFinite(Number(s.taxDeductionKrw))?Number(s.taxDeductionKrw):DEFAULT_STATE.taxDeductionKrw);
+  var buffer=Number(s.taxBufferPct);
+  s.taxBufferPct=Number.isFinite(buffer)&&buffer>=0&&buffer<=100?buffer:DEFAULT_STATE.taxBufferPct;
+  s.taxFxRate=finitePositive(s.taxFxRate,DEFAULT_STATE.taxFxRate);
+  s.heldThrough=parseSetLabel(s.heldThrough)?String(s.heldThrough).trim().toUpperCase():"";
+  s.version=7;
   return s;
+}
+// "30,30,,10" -> [30,30,null,10]; blank or invalid entries fall back to 엔진당 세트 수.
+function parseSetsOverride(value){
+  if(Array.isArray(value))value=value.join(",");
+  if(typeof value!=="string"||!value.trim())return [];
+  return value.split(/[,\s]+/).slice(0,20).map(function(part){
+    var n=Number(part);return Number.isInteger(n)&&n>=1&&n<=500?n:null;
+  });
+}
+function formatSetsOverride(list){
+  while(list.length&&list[list.length-1]===null)list.pop();
+  return list.map(function(n){return n===null?"":String(n)}).join(",");
+}
+// "E4-30" -> {engine:3,set:29} (0-based)
+function parseSetLabel(value){
+  var m=/^\s*E?(\d{1,2})\s*-\s*(\d{1,3})\s*$/i.exec(String(value||""));
+  if(!m)return null;
+  var e=Number(m[1])-1,i=Number(m[2])-1;
+  return e>=0&&i>=0?{engine:e,set:i}:null;
+}
+function dropRatio(){return 1-state.engineDropPct/100}
+function engineSets(engineIndex){
+  var list=parseSetsOverride(state.engineSetsOverride);
+  return list[engineIndex]||state.setsPerEngine;
+}
+function hasSetsOverride(){
+  for(var e=0;e<state.engineCount;e++)if(engineSets(e)!==state.setsPerEngine)return true;
+  return false;
 }
 function migrateLegacy(){
   try{
@@ -598,28 +684,38 @@ function getTakeProfitInfo(){
 }
 function getDerivedState(){
   var tpInfo=getTakeProfitInfo();
-  var totalSets=state.engineCount*state.setsPerEngine;
+  var ratio=dropRatio(),drop=1-ratio;
+  var totalSets=0;
+  for(var e0=0;e0<state.engineCount;e0++)totalSets+=engineSets(e0);
+  var overridden=hasSetsOverride();
+  // 균일 세트면 기존과 같은 전략자금/총세트. 엔진별 세트 수가 다르면 엔진마다 같은 금액을 나눠 배정.
   var setAmount=state.autoSetAmount?state.currentCapital/totalSets:state.manualSetAmount;
-  var totalGoalAllocation=setAmount*totalSets;
+  var totalGoalAllocation=0;
   var engines=[];
   var totalActualAllocation=0;
+  var globalIndex=0;
   for(var engineIndex=0;engineIndex<state.engineCount;engineIndex++){
-    var start=state.refHigh*Math.pow(0.6,engineIndex);
+    var start=state.refHigh*Math.pow(ratio,engineIndex);
+    var sets=engineSets(engineIndex);
+    var engineSetAmount=state.autoSetAmount&&overridden?state.currentCapital/state.engineCount/sets:setAmount;
     var rows=[];
     var actual=0;
-    for(var i=0;i<state.setsPerEngine;i++){
-      var buyPrice=start*(1-0.4*(i+1)/state.setsPerEngine);
-      var previousPrice=i===0?start:start*(1-0.4*i/state.setsPerEngine);
+    totalGoalAllocation+=engineSetAmount*sets;
+    for(var i=0;i<sets;i++){
+      var buyPrice=start*(1-drop*(i+1)/sets);
+      var previousPrice=i===0?start:start*(1-drop*i/sets);
       var dropPct=(buyPrice/previousPrice-1)*100;
-      var quantity=buyPrice>0?Math.floor(setAmount/buyPrice):0;
+      var quantity=buyPrice>0?Math.floor(engineSetAmount/buyPrice):0;
       var actualAmount=quantity*buyPrice;
       var sellPrice=tpInfo.effectivePct===null?null:buyPrice*(1+tpInfo.effectivePct/100);
       var expectedProfit=tpInfo.effectivePct===null?null:actualAmount*tpInfo.effectivePct/100;
       rows.push({
         number:i+1,
+        globalIndex:globalIndex,
+        account:Math.floor(globalIndex/state.setsPerAccount)+1,
         buyPrice:buyPrice,
         previousDropPct:dropPct,
-        targetAmount:setAmount,
+        targetAmount:engineSetAmount,
         quantity:quantity,
         actualAmount:actualAmount,
         sellPrice:sellPrice,
@@ -627,9 +723,10 @@ function getDerivedState(){
         expectedProfit:expectedProfit
       });
       actual+=actualAmount;
+      globalIndex++;
     }
     totalActualAllocation+=actual;
-    engines.push({index:engineIndex,start:start,end:start*0.6,rows:rows,actualAllocation:actual});
+    engines.push({index:engineIndex,start:start,end:start*ratio,sets:sets,setAmount:engineSetAmount,rows:rows,actualAllocation:actual});
   }
   var nextGrowthThreshold=state.growthBaseProfit+state.currentCapital*0.10;
   return{
@@ -640,6 +737,9 @@ function getDerivedState(){
     recommendedCapital:state.currentCapital*1.10,
     totalSets:totalSets,
     setAmount:setAmount,
+    setsOverridden:overridden,
+    accountCount:Math.ceil(totalSets/state.setsPerAccount),
+    bottomPrice:state.refHigh*Math.pow(ratio,state.engineCount),
     totalGoalAllocation:totalGoalAllocation,
     totalActualAllocation:totalActualAllocation,
     capitalDifference:state.currentCapital-totalGoalAllocation,
@@ -654,13 +754,23 @@ function updateForm(){
   el("refHigh").value=state.refHigh;
   el("engineCount").value=state.engineCount;
   el("setsPerEngine").value=state.setsPerEngine;
+  el("engineDropPct").value=state.engineDropPct;
+  el("engineSetsOverride").value=state.engineSetsOverride;
+  el("setsPerAccount").value=state.setsPerAccount;
+  el("taxRealizedKrw").value=state.taxRealizedKrw;
+  el("taxDeductionKrw").value=state.taxDeductionKrw;
+  el("taxBufferPct").value=state.taxBufferPct;
+  el("taxFxRate").value=state.taxFxRate;
+  el("heldThrough").value=state.heldThrough;
   el("atrDataDate").value=state.atrDataDate||"";el("manualLivePrice").value=state.livePrice||"";
   el("takeProfitMode").value=state.takeProfitMode;
   el("takeProfitPct").value=state.takeProfitPct;
   el("atr14").value=state.atr14||"";
   el("atrPrevClose").value=state.atrPrevClose||"";
   el("autoSetAmount").checked=state.autoSetAmount;
-  el("manualSetAmount").value=state.autoSetAmount?Number(getDerivedState().setAmount.toFixed(6)):state.manualSetAmount;
+  var dd=getDerivedState();
+  el("manualSetAmount").value=state.autoSetAmount?(dd.setsOverridden?"":Number(dd.setAmount.toFixed(6))):state.manualSetAmount;
+  el("manualSetAmount").placeholder=state.autoSetAmount&&dd.setsOverridden?"엔진별 상이 (매수표 참고)":"";
   el("manualSetAmount").disabled=state.autoSetAmount;
   el("takeProfitPct").disabled=state.takeProfitMode==="atr";
   el("atr14").disabled=state.takeProfitMode!=="atr";
@@ -697,20 +807,26 @@ function observePrice(price){state.livePrice=price}
 function renderPortfolio(){
  const d=getDerivedState(),all=d.engines.flatMap(e=>e.rows.map(r=>({e:e.index,r})));
  const next=state.livePrice>0?all.find(x=>x.r.buyPrice<state.livePrice):all[0];
- text('currentEngine',state.livePrice>0?'E'+Math.min(state.engineCount,1+Math.max(0,Math.floor(Math.log(state.livePrice/state.refHigh)/Math.log(.6)))):'—');
+ text('currentEngine',state.livePrice>0?'E'+Math.min(state.engineCount,1+Math.max(0,Math.floor(Math.log(state.livePrice/state.refHigh)/Math.log(dropRatio())))):'—');
  text('nextBuy',next?'E'+(next.e+1)+'-'+next.r.number+' '+priceFmt.format(next.r.buyPrice):'전체 매수구간 아래');
  text('overviewHigh',priceFmt.format(state.refHigh));
- text('defensePrice',priceFmt.format(state.refHigh*Math.pow(.6,state.engineCount)));
+ text('defensePrice',priceFmt.format(d.bottomPrice)+' ('+((d.bottomPrice/state.refHigh-1)*100).toFixed(1)+'%)');
+}
+function strategyLabel(){
+ if(!hasSetsOverride())return state.engineCount+"엔진 × "+state.setsPerEngine+"세트";
+ var list=[];for(var e=0;e<state.engineCount;e++)list.push(engineSets(e));
+ return state.engineCount+"엔진 · 세트 "+list.join("·");
 }
 function renderEngine(){
  var data=getDerivedState(),engine=data.engines[state.selectedEngine],tbody=el('engineRows');
  tbody.textContent='';el('mobileRows').textContent='';
  text('engineRange',priceFmt.format(engine.start)+' → '+priceFmt.format(engine.end));
- text('engineSetCount',state.setsPerEngine);text('engineSetAmount',money.format(data.setAmount));
+ text('engineSetCount',engine.sets);text('engineSetAmount',money.format(engine.setAmount));
  text('engineActualAllocation',money.format(engine.actualAllocation));
  engine.rows.forEach(function(r){
    var tr=document.createElement('tr');
    addTableCell(tr,'E'+(state.selectedEngine+1)+'-'+String(r.number).padStart(2,'0'));
+   addTableCell(tr,'계좌 '+r.account);
    addTableCell(tr,priceFmt.format(r.buyPrice),'buy');
    addTableCell(tr,r.quantity+'주',r.quantity===0?'unavailable':'qty');
    addTableCell(tr,money.format(r.actualAmount),'actual');
@@ -722,8 +838,95 @@ function renderEngine(){
  });
  document.querySelectorAll('.engine-tab').forEach(function(button){button.onclick=function(){state.selectedEngine=Number(button.getAttribute('data-engine'));renderTabs();renderEngine();saveState()}});
 }
+var WEEKDAYS_KO=["일","월","화","수","목","금","토"];
+function addWeekdays(date,count){
+  var d=new Date(date.getTime()),step=count<0?-1:1,left=Math.abs(count);
+  while(left>0){d.setUTCDate(d.getUTCDate()+step);var w=d.getUTCDay();if(w!==0&&w!==6)left--}
+  return d;
+}
+// 미국 주식은 체결일(미국) 기준 국내 결제가 영업일 2일 뒤 → 12월 31일 결제가 되는 마지막 미국 매매일.
+// 미국 휴장일은 반영하지 않으므로 증권사 공지로 최종 확인.
+function harvestDates(year){
+  var dec31=new Date(Date.UTC(year,11,31));
+  var last=dec31.getUTCDay()===0||dec31.getUTCDay()===6?addWeekdays(dec31,-1):dec31;
+  last=addWeekdays(last,-2);
+  var recommended=addWeekdays(last,-1);
+  function label(d){return (d.getUTCMonth()+1)+"월 "+d.getUTCDate()+"일("+WEEKDAYS_KO[d.getUTCDay()]+")"}
+  function iso(d){return d.toISOString().slice(0,10)}
+  return {year:year,last:iso(last),lastLabel:label(last),recommended:iso(recommended),recommendedLabel:label(recommended)};
+}
+function heldPredicate(){
+  var held=parseSetLabel(state.heldThrough);
+  if(held)return {mode:"label",test:function(eIdx,r){return eIdx<held.engine||(eIdx===held.engine&&r.number-1<=held.set)}};
+  if(state.livePrice>0)return {mode:"price",test:function(eIdx,r){return r.buyPrice>=state.livePrice}};
+  return null;
+}
+function computeTaxPlan(d){
+  d=d||getDerivedState();
+  var price=state.livePrice,fx=state.taxFxRate,held=heldPredicate();
+  var taxable=Math.max(0,state.taxRealizedKrw-state.taxDeductionKrw);
+  var target=taxable*(1+state.taxBufferPct/100);
+  var plan={price:price,heldMode:held?held.mode:null,taxable:taxable,target:target,accounts:[],picked:[],pickedLossKrw:0,
+    taxBefore:taxable*0.22,taxAfter:taxable*0.22,fillGapKrw:Math.max(0,state.taxDeductionKrw-state.taxRealizedKrw),fill:[],fillGainKrw:0,dates:harvestDates(Number(nyParts().year)||new Date().getFullYear())};
+  if(!held||!(price>0))return plan;
+  var map={};
+  d.engines.forEach(function(engine){engine.rows.forEach(function(r){
+    if(!held.test(engine.index,r)||r.quantity<=0)return;
+    var a=map[r.account]||(map[r.account]={account:r.account,labels:[],qty:0,plUsd:0});
+    a.labels.push("E"+(engine.index+1)+"-"+String(r.number).padStart(2,"0"));
+    a.qty+=r.quantity;a.plUsd+=r.quantity*(price-r.buyPrice);
+  })});
+  var list=Object.keys(map).map(function(k){var a=map[k];a.plKrw=a.plUsd*fx;return a});
+  list.sort(function(x,y){return x.plKrw-y.plKrw});
+  var cum=0;
+  if(target>0){
+    list.forEach(function(a){
+      if(cum<target&&a.plKrw<0){cum+=-a.plKrw;a.pick="loss";plan.picked.push(a.account)}
+      a.cum=a.pick?cum:null;
+    });
+    plan.pickedLossKrw=cum;
+    plan.taxAfter=Math.max(0,state.taxRealizedKrw-cum-state.taxDeductionKrw)*0.22;
+  }else if(plan.fillGapKrw>0){
+    // 공제 채우기: 남은 공제 한도 안에서 평가이익 큰 계좌부터
+    var room=plan.fillGapKrw;
+    list.slice().sort(function(x,y){return y.plKrw-x.plKrw}).forEach(function(a){
+      if(a.plKrw>0&&a.plKrw<=room){room-=a.plKrw;a.pick="gain";plan.fill.push(a.account);plan.fillGainKrw+=a.plKrw}
+    });
+  }
+  plan.accounts=list;
+  return plan;
+}
+var krw=new Intl.NumberFormat("ko-KR",{maximumFractionDigits:0});
+function wonText(v){return (v<0?"-":"")+krw.format(Math.abs(Math.round(v)))+"원"}
+function renderTax(d){
+  var plan=computeTaxPlan(d),tbody=el("taxRows");
+  tbody.textContent="";
+  text("taxTarget",plan.target>0?wonText(plan.target):(plan.fillGapKrw>0?"없음 · 공제 여유 "+wonText(plan.fillGapKrw):"없음"));
+  text("taxPickedCount",plan.target>0?plan.picked.length+"개":(plan.fill.length?plan.fill.length+"개 (공제 채우기)":"—"));
+  text("taxPickedLoss",plan.target>0?wonText(-plan.pickedLossKrw):(plan.fill.length?"+"+wonText(plan.fillGainKrw)+" 이익 실현":"—"));
+  text("taxBeforeAfter",wonText(plan.taxBefore)+" → "+wonText(plan.taxAfter));
+  var dl=plan.dates;
+  text("taxDeadline",dl.year+"년 마감: 미국 "+dl.lastLabel+" 정규장 매도분까지 올해 결제(국내 결제일 12월 31일). 실수 대비 권장일은 미국 "+dl.recommendedLabel+"입니다(한국시간 그날 밤 23:30 개장). 미국 휴장일은 반영하지 않았으니 12월 초 증권사 공지로 확인하세요.");
+  var warn=el("taxWarning"),msg="";
+  if(!(plan.price>0))msg="현재가가 필요합니다. 현황 탭에서 시세를 갱신하거나 전략 설정에서 현재가를 직접 입력하세요.";
+  else if(!plan.heldMode)msg="보유 세트를 알 수 없습니다.";
+  else if(plan.target>0&&plan.pickedLossKrw<plan.target)msg="평가손실이 목표보다 "+wonText(plan.target-plan.pickedLossKrw)+" 부족합니다. 전부 매도해도 세금이 일부 남습니다.";
+  warn.textContent=msg;warn.classList.toggle("show",!!msg);
+  text("taxBasis",plan.heldMode==="label"?"보유 세트: E1-01부터 "+state.heldThrough+"까지로 계산했습니다.":plan.heldMode==="price"?"보유 세트: 현재가("+priceFmt.format(plan.price)+") 이상 매수선은 모두 보유 중이라고 가정했습니다. 다르면 위에 보유 마지막 세트를 입력하세요.":"");
+  plan.accounts.forEach(function(a){
+    var tr=document.createElement("tr");if(a.pick)tr.className="holding";
+    addTableCell(tr,"계좌 "+a.account);
+    addTableCell(tr,a.labels.length>1?a.labels[0]+" ~ "+a.labels[a.labels.length-1]:a.labels[0]);
+    addTableCell(tr,qtyFmt.format(a.qty)+"주","qty");
+    addTableCell(tr,money.format(a.plUsd),a.plUsd<0?"unavailable":"profit");
+    addTableCell(tr,wonText(a.plKrw));
+    addTableCell(tr,a.cum?wonText(a.cum):"—");
+    addTableCell(tr,a.pick==="loss"?"✔ 매도·재매수":a.pick==="gain"?"✔ 공제 채우기":"");
+    tbody.appendChild(tr);
+  });
+}
 function renderPage(){
-  ["overview","table","settings","data"].forEach(function(page){
+  PAGES.forEach(function(page){
     var selected=page===state.activePage;
     el("page-"+page).hidden=!selected;
     el("menu-"+page).setAttribute("aria-pressed",String(selected));
@@ -736,12 +939,15 @@ function switchPage(page){
 function render(){
   renderPage();
   var d=getDerivedState();
-  text("strategySubtitle","SOXL "+state.engineCount+"엔진 × "+state.setsPerEngine+"세트 · ATR 익절");
-  text("strategyTitle","SOXL 샌드위치 "+state.engineCount+"E"+state.setsPerEngine+" · 전략 요약");
-  document.title="샌드위치 매매 · SOXL "+state.engineCount+"E"+state.setsPerEngine;
+  text("strategySubtitle","SOXL "+strategyLabel()+" · 엔진 -"+state.engineDropPct+"% · ATR 익절");
+  text("strategyTitle","SOXL 샌드위치 "+strategyLabel()+" · 전략 요약");
+  document.title="샌드위치 매매 · SOXL "+state.engineCount+"E"+(hasSetsOverride()?"":state.setsPerEngine);
   renderMarketPanel();
   text("sumCapital",money.format(d.currentCapital));
-  text("sumSetAmount",money.format(d.setAmount));
+  if(d.setsOverridden){
+    var amounts=d.engines.map(function(e){return e.setAmount});
+    text("sumSetAmount",money.format(Math.min.apply(null,amounts))+" ~ "+money.format(Math.max.apply(null,amounts)));
+  }else text("sumSetAmount",money.format(d.setAmount));
   text("sumProfit",money.format(d.totalRealizedProfit));
   text("sumReserve",money.format(d.integerShareReserve));
   el("sumProfit").classList.toggle("profit",d.totalRealizedProfit>=0);
@@ -788,10 +994,11 @@ function render(){
   el("growthProgressBar").style.width=progress+"%";
   el("applyRecommendedBtn").disabled=!ready;
   el("manualSetAmount").disabled=state.autoSetAmount;
-  if(state.autoSetAmount)el("manualSetAmount").value=Number(d.setAmount.toFixed(6));
+  if(state.autoSetAmount){el("manualSetAmount").value=d.setsOverridden?"":Number(d.setAmount.toFixed(6));el("manualSetAmount").placeholder=d.setsOverridden?"엔진별 상이 (매수표 참고)":""}
   renderPortfolio();
   renderTabs();
   renderEngine();
+  renderTax(d);
 }
 function setNumberFromInput(id,key,minimum,integer,capitalEdit){
   var input=el(id);
@@ -810,7 +1017,34 @@ function setNumberFromInput(id,key,minimum,integer,capitalEdit){
   input.addEventListener("blur",function(){updateForm()});
 }
 function bindControls(){
-  ["overview","table","settings","data"].forEach(function(page){el("menu-"+page).onclick=function(){switchPage(page)}});
+  PAGES.forEach(function(page){el("menu-"+page).onclick=function(){switchPage(page)}});
+  setNumberFromInput("setsPerAccount","setsPerAccount",1,true,false);
+  setNumberFromInput("taxRealizedKrw","taxRealizedKrw",-1e15,false,false);
+  setNumberFromInput("taxDeductionKrw","taxDeductionKrw",0,false,false);
+  setNumberFromInput("taxFxRate","taxFxRate",1,false,false);
+  el("engineDropPct").addEventListener("input",function(){
+    var v=Number(el("engineDropPct").value);
+    if(el("engineDropPct").value===""||!Number.isFinite(v)||v<5||v>90)return;
+    state.engineDropPct=v;render();saveState();
+  });
+  el("engineDropPct").addEventListener("blur",function(){updateForm()});
+  el("taxBufferPct").addEventListener("input",function(){
+    var v=Number(el("taxBufferPct").value);
+    if(el("taxBufferPct").value===""||!Number.isFinite(v)||v<0||v>100)return;
+    state.taxBufferPct=v;render();saveState();
+  });
+  el("taxBufferPct").addEventListener("blur",function(){updateForm()});
+  el("engineSetsOverride").addEventListener("input",function(){
+    state.engineSetsOverride=formatSetsOverride(parseSetsOverride(el("engineSetsOverride").value));
+    render();saveState();
+  });
+  el("engineSetsOverride").addEventListener("blur",function(){updateForm()});
+  el("heldThrough").addEventListener("input",function(){
+    var raw=el("heldThrough").value;
+    if(raw.trim()&&!parseSetLabel(raw))return;
+    state.heldThrough=raw.trim().toUpperCase();render();saveState();
+  });
+  el("heldThrough").addEventListener("blur",function(){updateForm()});
   el('atrDataDate').addEventListener('change',function(){state.atrDataDate=el('atrDataDate').value;state.atrFetchDay=nyDateString();render();saveState()});
   el('manualLivePrice').addEventListener('change',function(){const v=Number(el('manualLivePrice').value);if(v>0){observePrice(v);state.marketLastUpdated=new Date().toISOString();setMarketStatus('직접 입력 시세','');render();saveState()}});
 
@@ -901,7 +1135,9 @@ var CLOUD_SESSION_KEY="sandwich-account-session-v1";
 var CLOUD_META_KEY="sandwich-account-sync-v1";
 var CLOUD_OWNER_KEY="sandwich-account-owner-v1";
 var CLOUD_BACKUP_KEY="sandwich-before-cloud-import-v1";
-var CLOUD_FIELDS=["currentCapital","refHigh","engineCount","setsPerEngine","takeProfitMode","takeProfitPct","autoSetAmount","manualSetAmount","totalRealizedProfit","growthBaseProfit","atr14","atrPrevClose","atrDataDate"];
+var CLOUD_REQUIRED_FIELDS=["currentCapital","refHigh","engineCount","setsPerEngine","takeProfitMode","takeProfitPct","autoSetAmount","manualSetAmount","totalRealizedProfit","growthBaseProfit","atr14","atrPrevClose","atrDataDate"];
+// v7 항목: 이전 버전이 저장한 계정 데이터에는 없을 수 있으므로 필수로 검사하지 않음
+var CLOUD_FIELDS=CLOUD_REQUIRED_FIELDS.concat(["engineDropPct","engineSetsOverride","setsPerAccount","taxRealizedKrw","taxDeductionKrw","taxBufferPct","taxFxRate","heldThrough"]);
 var cloudSession=null,cloudMeta={revision:0,fingerprint:"",linked:false},cloudBusy=false,cloudTimer=null,cloudInterval=null,cloudConflict=false,cloudRemote=null,cloudEpoch=0,cloudRefreshPromise=null;
 function cloudSnapshot(){var out={};CLOUD_FIELDS.forEach(function(k){out[k]=state[k]});return out}
 function cloudFingerprint(value){return JSON.stringify(CLOUD_FIELDS.map(function(k){return value[k]}))}
@@ -967,7 +1203,9 @@ async function cloudFetchRow(){
 function cloudValidateRow(row){
  if(row===null)return null;
  if(!row.state||typeof row.state!=="object"||!Number.isSafeInteger(Number(row.revision))||Number(row.revision)<1)throw Error("계정 데이터 형식 오류");
- CLOUD_FIELDS.forEach(function(k){if(!(k in row.state))throw Error("계정 데이터 항목 누락: "+k)});
+ CLOUD_REQUIRED_FIELDS.forEach(function(k){if(!(k in row.state))throw Error("계정 데이터 항목 누락: "+k)});
+ // 이전 버전이 저장한 계정 데이터에 새 항목이 없으면 이 기기 값을 유지한다.
+ // (구버전 탭이 저장해도 엔진별 세트·절세 입력값이 기본값으로 지워지지 않게)
  var normalized=normalizeState(Object.assign({},state,row.state));
  var clean={};CLOUD_FIELDS.forEach(function(k){clean[k]=normalized[k]});
  return {state:clean,revision:Number(row.revision),updated_at:row.updated_at};
