@@ -268,6 +268,7 @@ dialog{border:1px solid var(--line);border-radius:16px;max-width:440px;width:cal
     <div class="field"><label for="engineCount">엔진 수 (1~20개)</label><input id="engineCount" type="number" inputmode="numeric" min="1" max="20" step="1" value="6"></div>
     <div class="field"><label for="setsPerEngine">엔진당 세트 수</label><input id="setsPerEngine" type="number" inputmode="numeric" min="1" max="500" step="1" value="30"></div>
     <div class="field"><label for="engineDropPct">엔진당 하락폭 (%)</label><input id="engineDropPct" type="number" inputmode="decimal" min="5" max="90" step="1" value="40"></div>
+    <div class="field"><label for="engineSetsOverride">엔진별 세트 수 (선택)</label><input id="engineSetsOverride" type="text" inputmode="numeric" autocomplete="off" placeholder="예: 30,30,30,30,10,10"></div>
     <div class="field"><label for="setsPerAccount">계좌당 세트 수</label><input id="setsPerAccount" type="number" inputmode="numeric" min="1" max="500" step="1" value="3"></div>
     <div class="field"><label for="takeProfitMode">익절 방식</label><select id="takeProfitMode"><option value="atr">ATR 가변 익절 (기본)</option><option value="fixed">고정 익절 (직접 설정)</option></select></div>
     <div class="field"><label for="takeProfitPct">고정 익절률 (%)</label><input id="takeProfitPct" type="number" inputmode="decimal" min="0" step="0.1" value="6"></div>
@@ -295,7 +296,7 @@ dialog{border:1px solid var(--line);border-radius:16px;max-width:440px;width:cal
     <p class="atr-note">최소 +5%, 최대 +10%로 제한합니다. 표의 목표 매도가는 현재 입력된 ATR 기준 참고값입니다. 실제 매수 당시 확정한 익절가는 증권사에서 별도로 유지하세요.</p>
   </div>
   <div id="atrWarning" class="warning" role="alert"></div>
-  <p class="calc-note">엔진 하락폭은 각 엔진이 시작가에서 몇 % 내려가 끝나는지입니다(기본 40%). 이미 체결된 엔진이 있을 때 하락폭을 바꾸면 매수선이 달라지니 주의하세요.</p>
+  <p class="calc-note">엔진 하락폭은 각 엔진이 시작가에서 몇 % 내려가 끝나는지입니다(기본 40%). 엔진별 세트 수를 쉼표로 적으면 그 엔진만 세트 수가 바뀌고, 자동 세트금액일 때 엔진마다 같은 금액(전략자금 ÷ 엔진 수)을 배정합니다. 비워두면 모든 엔진에 엔진당 세트 수를 씁니다. 이미 체결된 엔진의 하락폭·세트 수를 바꾸면 매수선이 달라지니 주의하세요.</p>
   <div class="growth">
     <div class="growth-top">
       <div id="growthStatus" class="growth-status">증액 진행 중</div>
@@ -451,6 +452,7 @@ var PAGES=["overview","table","settings","tax","data"];
 var DEFAULT_STATE={
   version:7,
   engineDropPct:40,
+  engineSetsOverride:"",
   setsPerAccount:3,
   taxRealizedKrw:0,
   taxDeductionKrw:2500000,
@@ -514,6 +516,7 @@ function normalizeState(value){
   s.selectedEngine=Math.max(0,Math.min(s.engineCount-1,Math.floor(Number(s.selectedEngine)||0)));
   var drop=Number(s.engineDropPct);
   s.engineDropPct=Number.isFinite(drop)&&drop>=5&&drop<=90?drop:DEFAULT_STATE.engineDropPct;
+  s.engineSetsOverride=formatSetsOverride(parseSetsOverride(s.engineSetsOverride));
   s.setsPerAccount=Math.max(1,Math.min(500,Math.floor(finitePositive(s.setsPerAccount,DEFAULT_STATE.setsPerAccount))));
   s.taxRealizedKrw=Number.isFinite(Number(s.taxRealizedKrw))?Number(s.taxRealizedKrw):0;
   s.taxDeductionKrw=Math.max(0,Number.isFinite(Number(s.taxDeductionKrw))?Number(s.taxDeductionKrw):DEFAULT_STATE.taxDeductionKrw);
@@ -524,6 +527,18 @@ function normalizeState(value){
   s.version=7;
   return s;
 }
+// "30,30,,10" -> [30,30,null,10]; blank or invalid entries fall back to 엔진당 세트 수.
+function parseSetsOverride(value){
+  if(Array.isArray(value))value=value.join(",");
+  if(typeof value!=="string"||!value.trim())return [];
+  return value.split(/[,\s]+/).slice(0,20).map(function(part){
+    var n=Number(part);return Number.isInteger(n)&&n>=1&&n<=500?n:null;
+  });
+}
+function formatSetsOverride(list){
+  while(list.length&&list[list.length-1]===null)list.pop();
+  return list.map(function(n){return n===null?"":String(n)}).join(",");
+}
 // "E4-30" -> {engine:3,set:29} (0-based)
 function parseSetLabel(value){
   var m=/^\s*E?(\d{1,2})\s*-\s*(\d{1,3})\s*$/i.exec(String(value||""));
@@ -532,6 +547,14 @@ function parseSetLabel(value){
   return e>=0&&i>=0?{engine:e,set:i}:null;
 }
 function dropRatio(){return 1-state.engineDropPct/100}
+function engineSets(engineIndex){
+  var list=parseSetsOverride(state.engineSetsOverride);
+  return list[engineIndex]||state.setsPerEngine;
+}
+function hasSetsOverride(){
+  for(var e=0;e<state.engineCount;e++)if(engineSets(e)!==state.setsPerEngine)return true;
+  return false;
+}
 function migrateLegacy(){
   try{
     var old=JSON.parse(localStorage.getItem(LEGACY_KEY)||"null");
@@ -662,7 +685,10 @@ function getTakeProfitInfo(){
 function getDerivedState(){
   var tpInfo=getTakeProfitInfo();
   var ratio=dropRatio(),drop=1-ratio;
-  var totalSets=state.engineCount*state.setsPerEngine;
+  var totalSets=0;
+  for(var e0=0;e0<state.engineCount;e0++)totalSets+=engineSets(e0);
+  var overridden=hasSetsOverride();
+  // 균일 세트면 기존과 같은 전략자금/총세트. 엔진별 세트 수가 다르면 엔진마다 같은 금액을 나눠 배정.
   var setAmount=state.autoSetAmount?state.currentCapital/totalSets:state.manualSetAmount;
   var totalGoalAllocation=0;
   var engines=[];
@@ -670,8 +696,8 @@ function getDerivedState(){
   var globalIndex=0;
   for(var engineIndex=0;engineIndex<state.engineCount;engineIndex++){
     var start=state.refHigh*Math.pow(ratio,engineIndex);
-    var sets=state.setsPerEngine;
-    var engineSetAmount=setAmount;
+    var sets=engineSets(engineIndex);
+    var engineSetAmount=state.autoSetAmount&&overridden?state.currentCapital/state.engineCount/sets:setAmount;
     var rows=[];
     var actual=0;
     totalGoalAllocation+=engineSetAmount*sets;
@@ -711,6 +737,7 @@ function getDerivedState(){
     recommendedCapital:state.currentCapital*1.10,
     totalSets:totalSets,
     setAmount:setAmount,
+    setsOverridden:overridden,
     accountCount:Math.ceil(totalSets/state.setsPerAccount),
     bottomPrice:state.refHigh*Math.pow(ratio,state.engineCount),
     totalGoalAllocation:totalGoalAllocation,
@@ -728,6 +755,7 @@ function updateForm(){
   el("engineCount").value=state.engineCount;
   el("setsPerEngine").value=state.setsPerEngine;
   el("engineDropPct").value=state.engineDropPct;
+  el("engineSetsOverride").value=state.engineSetsOverride;
   el("setsPerAccount").value=state.setsPerAccount;
   el("taxRealizedKrw").value=state.taxRealizedKrw;
   el("taxDeductionKrw").value=state.taxDeductionKrw;
@@ -740,7 +768,9 @@ function updateForm(){
   el("atr14").value=state.atr14||"";
   el("atrPrevClose").value=state.atrPrevClose||"";
   el("autoSetAmount").checked=state.autoSetAmount;
-  el("manualSetAmount").value=state.autoSetAmount?Number(getDerivedState().setAmount.toFixed(6)):state.manualSetAmount;
+  var dd=getDerivedState();
+  el("manualSetAmount").value=state.autoSetAmount?(dd.setsOverridden?"":Number(dd.setAmount.toFixed(6))):state.manualSetAmount;
+  el("manualSetAmount").placeholder=state.autoSetAmount&&dd.setsOverridden?"엔진별 상이 (매수표 참고)":"";
   el("manualSetAmount").disabled=state.autoSetAmount;
   el("takeProfitPct").disabled=state.takeProfitMode==="atr";
   el("atr14").disabled=state.takeProfitMode!=="atr";
@@ -781,6 +811,11 @@ function renderPortfolio(){
  text('nextBuy',next?'E'+(next.e+1)+'-'+next.r.number+' '+priceFmt.format(next.r.buyPrice):'전체 매수구간 아래');
  text('overviewHigh',priceFmt.format(state.refHigh));
  text('defensePrice',priceFmt.format(d.bottomPrice)+' ('+((d.bottomPrice/state.refHigh-1)*100).toFixed(1)+'%)');
+}
+function strategyLabel(){
+ if(!hasSetsOverride())return state.engineCount+"엔진 × "+state.setsPerEngine+"세트";
+ var list=[];for(var e=0;e<state.engineCount;e++)list.push(engineSets(e));
+ return state.engineCount+"엔진 · 세트 "+list.join("·");
 }
 function renderEngine(){
  var data=getDerivedState(),engine=data.engines[state.selectedEngine],tbody=el('engineRows');
@@ -904,12 +939,15 @@ function switchPage(page){
 function render(){
   renderPage();
   var d=getDerivedState();
-  text("strategySubtitle","SOXL "+state.engineCount+"엔진 × "+state.setsPerEngine+"세트 · 엔진 -"+state.engineDropPct+"% · ATR 익절");
-  text("strategyTitle","SOXL 샌드위치 "+state.engineCount+"E"+state.setsPerEngine+" · 전략 요약");
-  document.title="샌드위치 매매 · SOXL "+state.engineCount+"E"+state.setsPerEngine;
+  text("strategySubtitle","SOXL "+strategyLabel()+" · 엔진 -"+state.engineDropPct+"% · ATR 익절");
+  text("strategyTitle","SOXL 샌드위치 "+strategyLabel()+" · 전략 요약");
+  document.title="샌드위치 매매 · SOXL "+state.engineCount+"E"+(hasSetsOverride()?"":state.setsPerEngine);
   renderMarketPanel();
   text("sumCapital",money.format(d.currentCapital));
-  text("sumSetAmount",money.format(d.setAmount));
+  if(d.setsOverridden){
+    var amounts=d.engines.map(function(e){return e.setAmount});
+    text("sumSetAmount",money.format(Math.min.apply(null,amounts))+" ~ "+money.format(Math.max.apply(null,amounts)));
+  }else text("sumSetAmount",money.format(d.setAmount));
   text("sumProfit",money.format(d.totalRealizedProfit));
   text("sumReserve",money.format(d.integerShareReserve));
   el("sumProfit").classList.toggle("profit",d.totalRealizedProfit>=0);
@@ -956,7 +994,7 @@ function render(){
   el("growthProgressBar").style.width=progress+"%";
   el("applyRecommendedBtn").disabled=!ready;
   el("manualSetAmount").disabled=state.autoSetAmount;
-  if(state.autoSetAmount)el("manualSetAmount").value=Number(d.setAmount.toFixed(6));
+  if(state.autoSetAmount){el("manualSetAmount").value=d.setsOverridden?"":Number(d.setAmount.toFixed(6));el("manualSetAmount").placeholder=d.setsOverridden?"엔진별 상이 (매수표 참고)":""}
   renderPortfolio();
   renderTabs();
   renderEngine();
@@ -996,6 +1034,11 @@ function bindControls(){
     state.taxBufferPct=v;render();saveState();
   });
   el("taxBufferPct").addEventListener("blur",function(){updateForm()});
+  el("engineSetsOverride").addEventListener("input",function(){
+    state.engineSetsOverride=formatSetsOverride(parseSetsOverride(el("engineSetsOverride").value));
+    render();saveState();
+  });
+  el("engineSetsOverride").addEventListener("blur",function(){updateForm()});
   el("heldThrough").addEventListener("input",function(){
     var raw=el("heldThrough").value;
     if(raw.trim()&&!parseSetLabel(raw))return;
@@ -1094,7 +1137,7 @@ var CLOUD_OWNER_KEY="sandwich-account-owner-v1";
 var CLOUD_BACKUP_KEY="sandwich-before-cloud-import-v1";
 var CLOUD_REQUIRED_FIELDS=["currentCapital","refHigh","engineCount","setsPerEngine","takeProfitMode","takeProfitPct","autoSetAmount","manualSetAmount","totalRealizedProfit","growthBaseProfit","atr14","atrPrevClose","atrDataDate"];
 // v7 항목: 이전 버전이 저장한 계정 데이터에는 없을 수 있으므로 필수로 검사하지 않음
-var CLOUD_FIELDS=CLOUD_REQUIRED_FIELDS.concat(["engineDropPct","setsPerAccount","taxRealizedKrw","taxDeductionKrw","taxBufferPct","taxFxRate","heldThrough"]);
+var CLOUD_FIELDS=CLOUD_REQUIRED_FIELDS.concat(["engineDropPct","engineSetsOverride","setsPerAccount","taxRealizedKrw","taxDeductionKrw","taxBufferPct","taxFxRate","heldThrough"]);
 var cloudSession=null,cloudMeta={revision:0,fingerprint:"",linked:false},cloudBusy=false,cloudTimer=null,cloudInterval=null,cloudConflict=false,cloudRemote=null,cloudEpoch=0,cloudRefreshPromise=null;
 function cloudSnapshot(){var out={};CLOUD_FIELDS.forEach(function(k){out[k]=state[k]});return out}
 function cloudFingerprint(value){return JSON.stringify(CLOUD_FIELDS.map(function(k){return value[k]}))}
@@ -1162,7 +1205,7 @@ function cloudValidateRow(row){
  if(!row.state||typeof row.state!=="object"||!Number.isSafeInteger(Number(row.revision))||Number(row.revision)<1)throw Error("계정 데이터 형식 오류");
  CLOUD_REQUIRED_FIELDS.forEach(function(k){if(!(k in row.state))throw Error("계정 데이터 항목 누락: "+k)});
  // 이전 버전이 저장한 계정 데이터에 새 항목이 없으면 이 기기 값을 유지한다.
- // (구버전 탭이 저장해도 엔진 하락폭·절세 입력값이 기본값으로 지워지지 않게)
+ // (구버전 탭이 저장해도 엔진별 세트·절세 입력값이 기본값으로 지워지지 않게)
  var normalized=normalizeState(Object.assign({},state,row.state));
  var clean={};CLOUD_FIELDS.forEach(function(k){clean[k]=normalized[k]});
  return {state:clean,revision:Number(row.revision),updated_at:row.updated_at};
