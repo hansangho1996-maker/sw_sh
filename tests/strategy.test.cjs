@@ -1,4 +1,4 @@
-// 엔진 하락폭 · 엔진별 세트 수 · 계좌 배정 · 연말 절세 계산 검증 (패키지 설치 없음)
+// 엔진 하락폭 · 계좌 배정 · 연말 절세 계산 검증 (패키지 설치 없음)
 // 실행: node tests/strategy.test.cjs
 const fs=require('node:fs');
 const h=fs.readFileSync('index.html','utf8');
@@ -39,24 +39,12 @@ test("engine drop 50%",()=>{
  near(d.engines[0].rows[0].buyPrice,278*(1-0.5/30),"E1-01");near(d.engines[0].end,139,"E1 end");
 });
 
-// 3. 엔진별 세트 수 30,30,30,30,10,10 → 엔진마다 같은 금액, 10세트 매수선 = 30세트의 3칸마다
-test("per-engine sets override keeps equal capital per engine",()=>{
- const {t}=device();const base=t.derive();
- t.state().engineSetsOverride="30,30,30,30,10,10";const d=t.derive();
- assert(d.totalSets===140,"140 sets");assert(d.setsOverridden,"overridden");
- near(d.engines[0].setAmount,80000/6/30,"E1 set amount");near(d.engines[4].setAmount,80000/6/10,"E5 set amount");
- near(d.totalGoalAllocation,80000,"total 80k",1e-6);
- for(let k=0;k<10;k++)near(d.engines[4].rows[k].buyPrice,base.engines[4].rows[3*k+2].buyPrice,"E5 line "+k);
- near(d.engines[5].rows[9].buyPrice,278*Math.pow(0.6,6),"bottom line");
- assert(d.engines[4].rows[0].quantity===Math.floor((80000/60)/d.engines[4].rows[0].buyPrice),"E5 qty");
-});
-
 // 4. 계좌 배정: 계좌당 3세트
 test("account mapping",()=>{
- const {t}=device();t.state().engineSetsOverride="30,30,30,30,10,10";const d=t.derive();
+ const {t}=device();const d=t.derive();
  assert(d.engines[0].rows[0].account===1&&d.engines[0].rows[2].account===1&&d.engines[0].rows[3].account===2,"E1");
  assert(d.engines[3].rows[29].account===40,"E4-30 -> 40");assert(d.engines[4].rows[0].account===41,"E5-01 -> 41");
- assert(d.accountCount===47,"47 accounts");
+ assert(d.engines[5].rows[29].account===60&&d.accountCount===60,"60 accounts");
  t.state().setsPerAccount=10;assert(t.derive().engines[4].rows[0].account===13,"10 per account");
 });
 
@@ -95,10 +83,10 @@ test("harvest deadlines",()=>{
 
 // 8. 이전 버전 계정 데이터(새 항목 없음)도 불러오고, 이 기기의 새 항목은 유지
 test("legacy cloud rows stay compatible",()=>{
- const {t}=device();t.state().engineSetsOverride="30,30,30,30,10,10";
+ const {t}=device();t.state().engineDropPct=50;
  const legacy={currentCapital:80000,refHigh:278,engineCount:6,setsPerEngine:30,takeProfitMode:"atr",takeProfitPct:6,autoSetAmount:true,manualSetAmount:444.44,totalRealizedProfit:0,growthBaseProfit:0,atr14:0,atrPrevClose:0,atrDataDate:""};
  const row=t.validateRow({state:legacy,revision:3,updated_at:"x"});
- assert(row.state.engineSetsOverride==="30,30,30,30,10,10","local override kept");assert(row.state.engineDropPct===40,"default drop");
+ assert(row.state.engineDropPct===50,"local drop kept");assert(row.state.setsPerAccount===3,"default sets per account");
  let threw=false;try{const bad=Object.assign({},legacy);delete bad.refHigh;t.validateRow({state:bad,revision:3})}catch(e){threw=true}
  assert(threw,"required fields still checked");
  assert(t.fields.includes("engineDropPct")&&t.fields.includes("taxRealizedKrw"),"new fields synced");
@@ -106,22 +94,20 @@ test("legacy cloud rows stay compatible",()=>{
 
 // 9. 잘못된 입력 정리
 test("normalization of invalid values",()=>{
- const {t}=device();const s=t.normalize({engineDropPct:200,engineSetsOverride:"abc,10,,",setsPerAccount:0,heldThrough:"zz",taxBufferPct:-5});
- assert(s.engineDropPct===40&&s.engineSetsOverride===",10"&&s.setsPerAccount===3&&s.heldThrough===""&&s.taxBufferPct===10,JSON.stringify([s.engineDropPct,s.engineSetsOverride,s.setsPerAccount,s.heldThrough,s.taxBufferPct]));
+ const {t}=device();const s=t.normalize({engineDropPct:200,setsPerAccount:0,heldThrough:"zz",taxBufferPct:-5});
+ assert(s.engineDropPct===40&&s.setsPerAccount===3&&s.heldThrough===""&&s.taxBufferPct===10,JSON.stringify([s.engineDropPct,s.setsPerAccount,s.heldThrough,s.taxBufferPct]));
  assert(t.normalize({heldThrough:"e4-30"}).heldThrough==="E4-30","label upper");
 });
 
-// 10. 화면: 엔진별 세트 수가 표와 입력에 반영
-test("render with override and inputs",()=>{
+// 10. 화면: 계좌 열·입력·연말 절세 탭
+test("render account column and inputs",()=>{
  const {t,elems}=device();
- elems.engineSetsOverride.value="30,30,30,30,10,10";elems.engineSetsOverride.handlers.input();
- assert(t.state().engineSetsOverride==="30,30,30,30,10,10","override from input");
- t.state().selectedEngine=4;t.render();assert(elems.engineRows.children.length===10,"E5 rows "+elems.engineRows.children.length);
+ t.state().selectedEngine=4;t.render();assert(elems.engineRows.children.length===30,"E5 rows "+elems.engineRows.children.length);
  assert(elems.engineRows.children[0].children[1].textContent==="계좌 41","account cell");
  elems.engineDropPct.value="50";elems.engineDropPct.handlers.input();assert(t.state().engineDropPct===50,"drop input");
  elems.engineDropPct.value="95";elems.engineDropPct.handlers.input();assert(t.state().engineDropPct===50,"out of range ignored");
  elems["menu-tax"].click();assert(elems["page-tax"].hidden===false&&elems["page-table"].hidden===true,"tax page");
- assert(elems.strategySubtitle.textContent.includes("세트 30·30·30·30·10·10"),elems.strategySubtitle.textContent);
+ assert(elems.strategySubtitle.textContent.includes("6엔진 × 30세트 · 엔진 -50%"),elems.strategySubtitle.textContent);
 });
 
 console.log("PASS "+results.length+" tests: "+results.join(", "));
