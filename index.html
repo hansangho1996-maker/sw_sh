@@ -43,6 +43,10 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;ma
 .field{display:flex;flex-direction:column;gap:6px;min-width:0}
 .field label{font-size:12px;color:var(--muted)}
 .field input[type=number],.field input[type=text],.field select{width:100%;min-height:46px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);font-size:16px;font-variant-numeric:tabular-nums}
+.engine-inputs{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px}
+.engine-inputs .engine-input{display:flex;align-items:center;gap:6px;min-width:0}
+.engine-inputs .engine-input span{font-size:12px;font-weight:700;color:var(--muted);min-width:22px}
+.engine-inputs .engine-input input{min-height:42px;padding:8px 10px}
 .field input:focus,.field select:focus,.profit-add input:focus{outline:3px solid #f6c45366;border-color:var(--bread)}
 .field input:disabled,.field select:disabled{background:#f7f2e9;color:#796d60}
 .amount-control{display:grid;grid-template-columns:auto minmax(120px,1fr);align-items:center;gap:9px}
@@ -268,8 +272,8 @@ dialog{border:1px solid var(--line);border-radius:16px;max-width:440px;width:cal
     <div class="field"><label for="engineCount">엔진 수 (1~20개)</label><input id="engineCount" type="number" inputmode="numeric" min="1" max="20" step="1" value="6"></div>
     <div class="field"><label for="setsPerEngine">엔진당 세트 수</label><input id="setsPerEngine" type="number" inputmode="numeric" min="1" max="500" step="1" value="30"></div>
     <div class="field"><label for="engineDropPct">엔진당 하락폭 (%)</label><input id="engineDropPct" type="number" inputmode="decimal" min="5" max="90" step="1" value="40"></div>
-    <div class="field"><label for="engineDropOverride">엔진별 하락폭 % (선택)</label><input id="engineDropOverride" type="text" inputmode="decimal" autocomplete="off" placeholder="예: 40,40,40,40,50,50"></div>
-    <div class="field"><label for="engineSetsOverride">엔진별 세트 수 (선택)</label><input id="engineSetsOverride" type="text" inputmode="numeric" autocomplete="off" placeholder="예: 30,30,30,30,10,10"></div>
+    <div class="field wide"><label>엔진별 하락폭 % (선택 · 비우면 엔진당 하락폭)</label><div id="engineDropInputs" class="engine-inputs"></div></div>
+    <div class="field wide"><label>엔진별 세트 수 (선택 · 비우면 엔진당 세트 수)</label><div id="engineSetsInputs" class="engine-inputs"></div></div>
     <div class="field"><label for="setsPerAccount">계좌당 세트 수</label><input id="setsPerAccount" type="number" inputmode="numeric" min="1" max="500" step="1" value="3"></div>
     <div class="field"><label for="takeProfitMode">익절 방식</label><select id="takeProfitMode"><option value="atr">ATR 가변 익절 (기본)</option><option value="fixed">고정 익절 (직접 설정)</option></select></div>
     <div class="field"><label for="takeProfitPct">고정 익절률 (%)</label><input id="takeProfitPct" type="number" inputmode="decimal" min="0" step="0.1" value="6"></div>
@@ -782,8 +786,7 @@ function updateForm(){
   el("engineCount").value=state.engineCount;
   el("setsPerEngine").value=state.setsPerEngine;
   el("engineDropPct").value=state.engineDropPct;
-  el("engineSetsOverride").value=state.engineSetsOverride;
-  el("engineDropOverride").value=state.engineDropOverride;
+  buildEngineInputs();
   el("setsPerAccount").value=state.setsPerAccount;
   el("taxRealizedKrw").value=state.taxRealizedKrw;
   el("taxDeductionKrw").value=state.taxDeductionKrw;
@@ -840,6 +843,42 @@ function renderPortfolio(){
  text('nextBuy',next?'E'+(next.e+1)+'-'+next.r.number+' '+priceFmt.format(next.r.buyPrice):'전체 매수구간 아래');
  text('overviewHigh',priceFmt.format(state.refHigh));
  text('defensePrice',priceFmt.format(d.bottomPrice)+' ('+((d.bottomPrice/state.refHigh-1)*100).toFixed(1)+'%)');
+}
+// 엔진별 입력칸(숫자 자판용): 엔진마다 숫자 칸 하나, 비우면 기본값
+function buildEngineInputs(){
+  buildEngineInputRow("engineDropInputs","engineDropOverride",parseDropOverride,state.engineDropPct,"decimal",5,90);
+  buildEngineInputRow("engineSetsInputs","engineSetsOverride",parseSetsOverride,state.setsPerEngine,"numeric",1,500);
+}
+function buildEngineInputRow(containerId,key,parse,fallback,mode,min,max){
+  var box=el(containerId),list=parse(state[key]);
+  if(box.getAttribute("data-count")===String(state.engineCount)&&box.children.length===state.engineCount){
+    // 칸 수가 같으면 값만 갱신(입력 중인 칸은 건드리지 않음)
+    for(var k=0;k<state.engineCount;k++){
+      var inp=box.children[k].children[1];
+      inp.placeholder=String(fallback);
+      if(inp!==document.activeElement)inp.value=list[k]===null||list[k]===undefined?"":String(list[k]);
+    }
+    return;
+  }
+  box.textContent="";
+  for(var e=0;e<state.engineCount;e++){
+    var wrap=document.createElement("label");wrap.className="engine-input";
+    var tag=document.createElement("span");tag.textContent="E"+(e+1);
+    var input=document.createElement("input");
+    input.type="number";input.setAttribute("inputmode",mode);input.min=min;input.max=max;input.step=mode==="decimal"?"0.1":"1";
+    input.placeholder=String(fallback);input.value=list[e]===null||list[e]===undefined?"":String(list[e]);
+    input.setAttribute("aria-label","E"+(e+1)+(key==="engineDropOverride"?" 하락폭 %":" 세트 수"));
+    input.addEventListener("input",engineInputHandler(containerId,key,parse));
+    wrap.appendChild(tag);wrap.appendChild(input);box.appendChild(wrap);
+  }
+  box.setAttribute("data-count",String(state.engineCount));
+}
+function engineInputHandler(containerId,key,parse){
+  return function(){
+    var values=Array.prototype.map.call(el(containerId).children,function(w){return w.children[1].value});
+    state[key]=formatSetsOverride(parse(values.map(function(v){return String(v).trim()}).join(",")));
+    render();saveState();
+  };
 }
 function dropLabel(){
  if(!hasDropOverride())return "엔진 -"+state.engineDropPct+"%";
@@ -1033,6 +1072,7 @@ function render(){
   renderTabs();
   renderEngine();
   renderTax(d);
+  if(el("engineDropInputs").getAttribute("data-count")!==String(state.engineCount))buildEngineInputs();
 }
 function setNumberFromInput(id,key,minimum,integer,capitalEdit){
   var input=el(id);
@@ -1068,16 +1108,6 @@ function bindControls(){
     state.taxBufferPct=v;render();saveState();
   });
   el("taxBufferPct").addEventListener("blur",function(){updateForm()});
-  el("engineDropOverride").addEventListener("input",function(){
-    state.engineDropOverride=formatSetsOverride(parseDropOverride(el("engineDropOverride").value));
-    render();saveState();
-  });
-  el("engineDropOverride").addEventListener("blur",function(){updateForm()});
-  el("engineSetsOverride").addEventListener("input",function(){
-    state.engineSetsOverride=formatSetsOverride(parseSetsOverride(el("engineSetsOverride").value));
-    render();saveState();
-  });
-  el("engineSetsOverride").addEventListener("blur",function(){updateForm()});
   el("heldThrough").addEventListener("input",function(){
     var raw=el("heldThrough").value;
     if(raw.trim()&&!parseSetLabel(raw))return;

@@ -21,6 +21,8 @@ function device(){
  return {t,elems};
 }
 const results=[];
+// 엔진별 입력칸에 값 넣기 (빈 문자열 = 기본값)
+function setEngineBoxes(elems,id,values){const box=elems[id];values.forEach((v,i)=>{const inp=box.children[i].children[1];inp.value=String(v)});box.children[0].children[1].handlers.input()}
 function test(name,fn){fn();results.push(name)}
 
 // 1. 기본값은 기존 공식과 완전히 같다 (회귀)
@@ -114,14 +116,16 @@ test("normalization of invalid values",()=>{
 // 10. 화면: 엔진별 세트 수가 표와 입력에 반영
 test("render with override and inputs",()=>{
  const {t,elems}=device();
- elems.engineSetsOverride.value="30,30,30,30,10,10";elems.engineSetsOverride.handlers.input();
- assert(t.state().engineSetsOverride==="30,30,30,30,10,10","override from input");
+ setEngineBoxes(elems,"engineSetsInputs",["","","","",10,10]);
+ assert(t.state().engineSetsOverride===",,,,10,10","override from boxes");
  t.state().selectedEngine=4;t.render();assert(elems.engineRows.children.length===10,"E5 rows "+elems.engineRows.children.length);
  assert(elems.engineRows.children[0].children[1].textContent==="계좌 41","account cell");
  elems.engineDropPct.value="50";elems.engineDropPct.handlers.input();assert(t.state().engineDropPct===50,"drop input");
  elems.engineDropPct.value="95";elems.engineDropPct.handlers.input();assert(t.state().engineDropPct===50,"out of range ignored");
  elems["menu-tax"].click();assert(elems["page-tax"].hidden===false&&elems["page-table"].hidden===true,"tax page");
  assert(elems.strategySubtitle.textContent.includes("세트 30·30·30·30·10·10"),elems.strategySubtitle.textContent);
+ // 엔진 수를 바꾸면 칸 수도 바뀜
+ elems.engineCount.value="8";elems.engineCount.handlers.input();assert(elems.engineSetsInputs.children.length===8,"8 boxes");
 });
 
 // 11. 첫 매수 = 엔진 시작가 (기본값)
@@ -137,11 +141,14 @@ test("first buy at engine start",()=>{
  const all=d.engines.flatMap(e=>e.rows.map(r=>r.buyPrice));assert(new Set(all.map(x=>x.toFixed(6))).size===180,"no duplicate lines");
 });
 
-// 12. 엔진별 하락폭: 40,40,40,40,50,50
+// 12. 엔진별 하락폭: 엔진마다 숫자 칸
 test("per-engine drop override",()=>{
  const {t,elems}=device();
- elems.engineDropOverride.value="40,40,40,40,50,50";elems.engineDropOverride.handlers.input();
- assert(t.state().engineDropOverride==="40,40,40,40,50,50","from input");
+ assert(elems.engineDropInputs.children.length===6,"6 boxes");
+ assert(elems.engineDropInputs.children[0].children[1].attrs.inputmode==="decimal","number keypad");
+ setEngineBoxes(elems,"engineDropInputs",[40,40,40,40,50,50]);
+ assert(t.state().engineDropOverride==="40,40,40,40,50,50","from boxes");
+ setEngineBoxes(elems,"engineDropInputs",["","","","",50,50]);assert(t.state().engineDropOverride===",,,,50,50","blank boxes = default");
  const d=t.derive();const s4=278*Math.pow(0.6,4);
  near(d.engines[3].end,s4,"E4 end unchanged");near(d.engines[4].start,s4,"E5 start");near(d.engines[4].end,s4*0.5,"E5 end -50%");
  near(d.engines[5].start,s4*0.5,"E6 start");near(d.engines[5].end,s4*0.25,"E6 end");
